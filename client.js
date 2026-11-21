@@ -101,6 +101,9 @@ window.__ModuleLoader__.load({
       '.dshmp-acct .ic.has-logo{background:var(--dsw-alias-bg-layer-2,#8882)}',
       // App Store 风格下载圆环按钮
       '.dshmp-dl{appearance:none;border:none;background:0 0;color:var(--dsw-alias-label-secondary);cursor:pointer;padding:2px;flex:none;width:26px;height:26px;display:inline-flex;align-items:center;justify-content:center;border-radius:50%}',
+      '.dshmp-ply{appearance:none;border:none;background:0 0;color:var(--dsw-alias-label-secondary);cursor:pointer;padding:2px;flex:none;width:26px;height:26px;display:inline-flex;align-items:center;justify-content:center;border-radius:50%}',
+      '.dshmp-ply:hover{background:rgba(128,138,152,.16);color:var(--dsw-alias-label-primary)}',
+      '.dshmp-ply svg{width:14px;height:14px;display:block}',
       '.dshmp-dl:hover{background:var(--dsw-alias-interactive-bg-hover)}',
       '.dshmp-dl svg{width:26px;height:26px;transform:rotate(-90deg);display:block}',
       '.dshmp-dl .trk{stroke:rgba(128,138,152,.32)}',
@@ -1135,7 +1138,13 @@ window.__ModuleLoader__.load({
             key: 's' + t.id + '/' + i, t, playing: isCurrent(t),
             sub: t.artist || '',
             onClick: () => ((t.source === 'pan' || t.source === 'wusunk') ? panClick(t) : playTrack(rowsView, i)),
-            actions: t.source !== 'pan' && t.source !== 'wusunk' ? h(DlBtn, { t }) : null,
+            actions: t.source !== 'pan' && t.source !== 'wusunk' ? h('span', { style: { display: 'inline-flex', gap: 2, alignItems: 'center' } },
+              h('button', {
+                className: 'dshmp-ply',
+                title: '播放',
+                onClick: (e) => { e.stopPropagation(); playTrack(rowsView, i) },
+              }, h('svg', { viewBox: '0 0 24 24', fill: 'currentColor', 'aria-hidden': true }, h('path', { d: 'M8 5.5v13l11-6.5z' }))),
+              h(DlBtn, { t })) : null,
           })),
         pls.map((p) => h('div', {
           key: p.id, className: 'dshmp-rowitem',
