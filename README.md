@@ -32,6 +32,12 @@ Prerequisite: DSH desktop (DeepSeek Harness) and Node.js ≥ 20.
 git clone git@github.com:qipengxiang/dsh-music-player.git
 ```
 
+To install a specific version, clone its tag (see the repo tags for all versions):
+
+```bash
+git clone --branch v0.4.21 --depth 1 git@github.com:qipengxiang/dsh-music-player.git
+```
+
 Register the plugin in your DSH profile (default `~/.dsh`):
 
 1. In the profile `package.json`, add to `dependencies`:

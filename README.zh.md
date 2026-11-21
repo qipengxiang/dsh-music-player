@@ -30,6 +30,12 @@ DSH 桌面端迷你音乐播放器插件：在会话标题栏右上角（侧边�
 git clone git@github.com:qipengxiang/dsh-music-player.git
 ```
 
+安装指定版本时，克隆对应 tag（各版本见仓库 tags）：
+
+```bash
+git clone --branch v0.4.21 --depth 1 git@github.com:qipengxiang/dsh-music-player.git
+```
+
 在你的 DSH profile（默认 `~/.dsh`）中登记本地插件：
 
 1. 编辑 profile 的 `package.json`，在 `dependencies` 加入：
