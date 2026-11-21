@@ -74,7 +74,8 @@ window.__ModuleLoader__.load({
       '.dshmp-th.t{flex:1;overflow:hidden;text-overflow:ellipsis}',
       '.dshmp-th.s{width:96px}',
       '.dshmp-th.d{width:40px;text-align:right}',
-      '.dshmp-th.act{width:26px}',
+      '.dshmp-th.act{width:64px;text-align:right}',
+      '.dshmp-act{flex:none;width:64px;display:flex;align-items:center;justify-content:flex-end;gap:2px;overflow:hidden}',
       '.dshmp-act2{display:flex;align-items:center;gap:2px;flex:none}',
       '.dshmp-libline{display:flex;flex-wrap:wrap;align-items:center;gap:6px;padding:6px;font-size:11px;color:var(--dsw-alias-label-tertiary)}',
       '.dshmp-xbtn{appearance:none;border:none;background:0 0;color:inherit;cursor:pointer;padding:0 0 0 2px;font-size:10px;line-height:1;opacity:.7}',
@@ -707,7 +708,7 @@ window.__ModuleLoader__.load({
           tag ? h('span', { className: 'dshmp-tag' }, tag) : null, t.title),
         h('span', { className: 'sub' }, sub ?? (t.artist || '')),
         h('span', { className: 'dshmp-dur' }, t.duration ? fmtTime(t.duration) : ''),
-        actions ?? null)
+        h('span', { className: 'dshmp-act' }, actions ?? null))
     }
 
     const TrashIcon = () => h('svg', { viewBox: '0 0 24 24', width: '14', height: '14', fill: 'none', stroke: 'currentColor', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round', 'aria-hidden': 'true' },
