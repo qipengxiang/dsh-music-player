@@ -1075,16 +1075,17 @@ window.__ModuleLoader__.load({
       const [pls, setPls] = useState([])
       const [busy, setBusy] = useState(false)
       const [err, setErr] = useState('')
-      const [dlMsg, setDlMsg] = useState('')
+      const [more, setMore] = useState(null)
       const [page, setPage] = useState(1)
       const [ssort, setSSort] = useState({ key: '', dir: 1 })
       const doSearch = async (targetPage) => {
         targetPage = safePage(targetPage) // onClick: doSearch 会把 MouseEvent 传进来
-        setBusy(true); setErr(''); setRows([]); setPls([]); setDlMsg('')
+        setBusy(true); setErr(''); setRows([]); setPls([]); setMore(null)
         try {
           if (kind === 'song') {
             const j = await api(`/search?source=${source}&q=${encodeURIComponent(q)}&page=${targetPage}`)
             setRows(j.tracks ?? [])
+            setMore(typeof j.hasMore === 'boolean' ? j.hasMore : null)
           } else {
             const j = await api(`/search-playlists?source=${kind === 'playlist' ? plSource : source}&q=${encodeURIComponent(q)}`)
             setPls(j.playlists ?? [])
@@ -1101,11 +1102,11 @@ window.__ModuleLoader__.load({
           const link = (j.links ?? [])[0]?.url ?? ''
           if (!link) throw new Error('没有拿到网盘链接')
           try { await navigator.clipboard.writeText(link) } catch {}
-          setDlMsg(`网盘链接已复制：${link}`)
-        } catch (e) { setDlMsg(String(e.message ?? e)) }
+          showToast(`网盘链接已复制：${link}`)
+        } catch (e) { showToast(String(e.message ?? e)) }
       }
       const rowsView = useMemo(() => sortRows(rows, ssort), [rows, ssort])
-      const hasMore = rows.length >= (PAGE_SIZE[source] ?? 30)
+      const hasMore = more ?? rows.length >= (PAGE_SIZE[source] ?? 30)
       return h('div', { className: 'dshmp-tab-fill' },
         h('div', { style: { display: 'flex', gap: 4, marginBottom: 4, flex: 'none' } },
           h('select', { className: 'dshmp-input', style: { flex: 'none', width: 84 }, value: kind, onChange: (e) => setKind(e.target.value) },
@@ -1127,7 +1128,6 @@ window.__ModuleLoader__.load({
           h('input', { className: 'dshmp-input', placeholder: kind === 'song' ? '搜索歌曲' : '搜索歌单', value: q, onChange: (e) => setQ(e.target.value), onKeyDown: (e) => { if (e.key === 'Enter') doSearch() } }),
           h('button', { className: 'dshmp-mini primary', disabled: busy, onClick: doSearch }, busy ? '…' : '搜索')),
         err ? h('div', { className: 'dshmp-empty' }, err) : null,
-        dlMsg ? h('div', { className: 'dshmp-empty' }, dlMsg) : null,
         !err && busy ? h('div', { className: 'dshmp-empty' }, '搜索中…') : null,
         kind === 'song' && rows.length ? h(TrackHead, { sort: ssort, onSort: (k) => setSSort(nextSort(ssort, k)), action: '下载' }) : null,
         h('div', { className: 'dshmp-tab-scroll' },
@@ -1135,7 +1135,7 @@ window.__ModuleLoader__.load({
             key: 's' + t.id + '/' + i, t, playing: isCurrent(t),
             sub: t.artist || '',
             onClick: () => ((t.source === 'pan' || t.source === 'wusunk') ? panClick(t) : playTrack(rowsView, i)),
-            actions: t.source !== 'pan' && t.source !== 'wusunk' ? h(DlBtn, { t, onMsg: setDlMsg }) : null,
+            actions: t.source !== 'pan' && t.source !== 'wusunk' ? h(DlBtn, { t }) : null,
           })),
         pls.map((p) => h('div', {
           key: p.id, className: 'dshmp-rowitem',
@@ -1190,7 +1190,7 @@ window.__ModuleLoader__.load({
       return { dash: RING_LEN, offset: RING_LEN * (1 - p), indet: phase === 'downloading' && total <= 0 }
     }
 
-    function DlBtn({ t, onMsg }) {
+    function DlBtn({ t }) {
       const s = useStore()
       const [busy, setBusy] = useState(false)
       const [st, setSt] = useState(null)
@@ -1198,6 +1198,7 @@ window.__ModuleLoader__.load({
       const start = async () => {
         if (busy) return
         setBusy(true); setSt({ phase: 'linking' })
+        showToast(`开始下载：${t.title}`)
         const key = `${t.source}:${t.id}`
         const timer = setInterval(async () => {
           try { const j = await api(`/download-progress?key=${encodeURIComponent(key)}`); if (j?.phase) setSt(j) } catch {}
@@ -1208,8 +1209,8 @@ window.__ModuleLoader__.load({
             body: JSON.stringify({ source: t.source, id: t.id, title: t.title, artist: t.artist, duration: t.duration, cover: t.cover }),
           })
           store.state = await api('/state'); emit()
-          onMsg?.(`已下载：${t.title}`)
-        } catch (e) { onMsg?.(String(e.message ?? e)) }
+          showToast(`已下载：${t.title}`)
+        } catch (e) { showToast(`下载失败：${String(e.message ?? e)}`) }
         clearInterval(timer)
         setBusy(false); setSt(null)
       }

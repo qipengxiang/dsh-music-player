@@ -39,6 +39,8 @@ const stripEm = (title) => String(title ?? '').replace(/<[^>]+>/g, '')
 export async function search(q, page = 1) {
   const data = await signedGet('/x/web-interface/wbi/search/type', { search_type: 'video', keyword: q, page })
   return {
+    // B站自己给页数；客户端用"本页行数<每页数"猜下一页，在过滤掉非视频卡片后会误判
+    hasMore: Number(data?.numPages ?? 0) > page,
     tracks: (data?.result ?? [])
       .filter((v) => v.type === 'video')
       .map((v) => ({
@@ -52,16 +54,33 @@ export async function search(q, page = 1) {
   }
 }
 
-export async function view(bvid) {
-  const { json } = await httpJson(`${API}/x/web-interface/view?bvid=${encodeURIComponent(bvid)}`)
-  if (json?.code !== 0) throw new Error('视频不存在或已失效')
-  const d = json.data
+async function viewOnce(bvid, cookie) {
+  const { json } = await httpJson(`${API}/x/web-interface/view?bvid=${encodeURIComponent(bvid)}`, {
+    headers: { cookie: cookie || anonCookie(), referer: 'https://www.bilibili.com/' },
+  })
+  if (json?.code !== 0) {
+    const err = new Error(`B站接口 ${json?.code ?? '无响应'}：${json?.message ?? '未知错误'}`)
+    err.apiCode = json?.code
+    throw err
+  }
+  return json.data
+}
+
+export async function view(bvid, cookie = '') {
+  // 匿名批量请求偶发风控（同一视频重试就成功），失败重试一次再报真实错误码
+  let d
+  try {
+    d = await viewOnce(bvid, cookie)
+  } catch (e) {
+    if (e.apiCode === undefined) throw e
+    d = await viewOnce(bvid, cookie)
+  }
   return { cid: d.cid, duration: d.duration, title: d.title, artist: d.owner?.name ?? '', cover: d.pic }
 }
 
 /** Highest-bandwidth DASH audio stream; must be fetched with a bilibili referer (the proxy adds it). */
 export async function songUrl(bvid, cookie = '') {
-  const v = await view(bvid)
+  const v = await view(bvid, cookie)
   // wbi/playurl 404s for anonymous callers since late 2025; the plain player endpoint still works.
   const { json } = await httpJson(
     `${API}/x/player/playurl?bvid=${encodeURIComponent(bvid)}&cid=${v.cid}&fnval=16&qn=64&platform=pc`,
