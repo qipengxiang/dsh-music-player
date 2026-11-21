@@ -384,7 +384,10 @@ window.__ModuleLoader__.load({
     function hideCoverTip() {
       if (coverTipEl) { coverTipEl.remove(); coverTipEl = null }
     }
-
+    // 项目 LOGO：与设置按钮同款空心齿轮（Feather settings）
+    const GearIcon = ({ size = 15 }) => h('svg', { viewBox: '0 0 24 24', width: size, height: size, fill: 'none', stroke: 'currentColor', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round', 'aria-hidden': 'true' },
+        h('circle', { cx: 12, cy: 12, r: 3 }),
+        h('path', { d: 'M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z' }))
     const isMac = typeof navigator !== 'undefined' && /Mac/.test(navigator.platform || navigator.userAgent || '')
     let toastTimer = 0
     function showToast(text) {
@@ -569,7 +572,7 @@ window.__ModuleLoader__.load({
             style: track && track.cover ? { backgroundImage: `url("${API}/stream?u=${encodeURIComponent(track.cover)}")` } : undefined,
             onMouseEnter: (e) => showCoverTip(e.currentTarget.getBoundingClientRect(), track ? `${track.title}${track.artist ? ' - ' + track.artist : ''}` : ''),
             onMouseLeave: hideCoverTip,
-          }, track && track.cover ? null : '♪'),
+          }, track && track.cover ? null : h(GearIcon, { size: 14 })),
           h('button', { className: 'dshmp-btn', title: '上一曲', onClick: prevTrack },
             h('svg', { viewBox: '0 0 24 24', width: '15', height: '15', fill: 'currentColor', 'aria-hidden': 'true' },
               h('path', { d: 'M2.2 2.6h3.1v18.8H2.2z' }),
@@ -694,9 +697,7 @@ window.__ModuleLoader__.load({
           }, label)),
           h('button', {
             className: 'dshmp-btn dshmp-pop-set', title: '设置', onClick: () => { store.pop = 'settings'; emit() },
-          }, h('svg', { viewBox: '0 0 24 24', width: '15', height: '15', fill: 'none', stroke: 'currentColor', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round', 'aria-hidden': 'true' },
-            h('circle', { cx: 12, cy: 12, r: 3 }),
-            h('path', { d: 'M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z' }))),
+          }, h(GearIcon, { size: 15 })),
           h('button', { className: 'dshmp-btn dshmp-pop-x', title: '关闭', onClick: () => { store.pop = null; emit() } }, '✕')),
         h('div', { className: 'dshmp-body' },
           s.pop === 'list' ? h(ListTab) : s.pop === 'search' ? h(SearchTab) : h(AccountTab)))
