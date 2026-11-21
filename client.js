@@ -389,6 +389,9 @@ window.__ModuleLoader__.load({
         h('circle', { cx: 12, cy: 12, r: 3 }),
         h('path', { d: 'M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z' }))
     const isMac = typeof navigator !== 'undefined' && /Mac/.test(navigator.platform || navigator.userAgent || '')
+    const MusicLogo = ({ size = 22 }) => h('svg', { viewBox: '0 0 32 32', width: size, height: size, 'aria-hidden': 'true' },
+      h('circle', { cx: 16, cy: 16, r: 15, fill: '#4f46e5' }),
+      h('path', { d: 'M22 8.5v11a3.2 3.2 0 1 1-2-2.9V11.4l-7 1.6v9a3.2 3.2 0 1 1-2-2.9V10.5l11-2.5z', fill: '#fff' }))
     let toastTimer = 0
     function showToast(text) {
       if (!text || typeof document === 'undefined') return
@@ -572,7 +575,7 @@ window.__ModuleLoader__.load({
             style: track && track.cover ? { backgroundImage: `url("${API}/stream?u=${encodeURIComponent(track.cover)}")` } : undefined,
             onMouseEnter: (e) => showCoverTip(e.currentTarget.getBoundingClientRect(), track ? `${track.title}${track.artist ? ' - ' + track.artist : ''}` : ''),
             onMouseLeave: hideCoverTip,
-          }, track && track.cover ? null : h(GearIcon, { size: 14 })),
+          }, track && track.cover ? null : h(MusicLogo, { size: 22 })),
           h('button', { className: 'dshmp-btn', title: '上一曲', onClick: prevTrack },
             h('svg', { viewBox: '0 0 24 24', width: '15', height: '15', fill: 'currentColor', 'aria-hidden': 'true' },
               h('path', { d: 'M2.2 2.6h3.1v18.8H2.2z' }),
