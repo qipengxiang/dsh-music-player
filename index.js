@@ -433,6 +433,7 @@ export function apply(ctx) {
               mode: body.mode ?? state.settings.mode,
               downloadDir: body.downloadDir !== undefined ? body.downloadDir : state.settings.downloadDir,
               pageSize: body.pageSize !== undefined ? body.pageSize : state.settings.pageSize,
+              defaultSource: body.defaultSource !== undefined ? body.defaultSource : state.settings.defaultSource,
               accent: body.accent !== undefined ? body.accent : state.settings.accent,
               hotkeys: {
                 prev: bodyHk.prev !== undefined ? bodyHk.prev : hk.prev,

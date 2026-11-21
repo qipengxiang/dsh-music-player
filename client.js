@@ -1073,8 +1073,9 @@ window.__ModuleLoader__.load({
 
     function SearchTab() {
       const [kind, setKind] = useState('song')
-      const [source, setSource] = useState('bilibili')
-      const [plSource, setPlSource] = useState('bilibili')
+      const defSrc = () => store.state.settings.defaultSource || 'bilibili' // 默认音源可在设置页改
+      const [source, setSource] = useState(defSrc)
+      const [plSource, setPlSource] = useState(defSrc)
       const [q, setQ] = useState('')
       const [rows, setRows] = useState([])
       const [pls, setPls] = useState([])
@@ -1495,10 +1496,12 @@ window.__ModuleLoader__.load({
       const [sdpage, setSdPage] = useState(1)
       const [psz, setPsz] = useState('10')
       const [accentTmp, setAccentTmp] = useState('')
+      const [srcTmp, setSrcTmp] = useState('bilibili')
       useEffect(() => {
         setPsz(String(store.state.settings.pageSize ?? 10))
         setAccentTmp(store.state.settings.accent ?? '')
-      }, [s.state.settings.pageSize, s.state.settings.accent])
+        setSrcTmp(store.state.settings.defaultSource || 'bilibili')
+      }, [s.state.settings.pageSize, s.state.settings.accent, s.state.settings.defaultSource])
       useEffect(() => {
         (async () => {
           try {
@@ -1560,7 +1563,7 @@ window.__ModuleLoader__.load({
       const dlView = useMemo(() => sortRows(s.state.downloads ?? [], dsort), [s.state.downloads, dsort])
       const saveAll = async () => {
         try {
-          const body = { pageSize: Number(psz) || 10, accent: accentTmp }
+          const body = { pageSize: Number(psz) || 10, accent: accentTmp, defaultSource: srcTmp }
           if (dir.trim()) body.downloadDir = dir.trim() // 空值=沿用默认目录，不提交避免校验报错
           store.state = await api('/settings', { method: 'POST', body: JSON.stringify(body) })
           emit(); showToast('已保存')
@@ -1686,6 +1689,23 @@ window.__ModuleLoader__.load({
               }),
               accentTmp ? h('button', { className: 'dshmp-mini', onClick: () => setAccentTmp('') }, '恢复默认') : null,
               h('span', { className: 'dshmp-pgnum' }, '进度条与已播歌词')))),
+        h('div', { className: 'dshmp-set-block' },
+          h('div', { className: 'dshmp-set-field' },
+            h('span', {}, '默认音源'),
+            h('select', {
+              className: 'dshmp-input', style: { flex: 'none', width: 120 },
+              value: srcTmp, onChange: (e) => setSrcTmp(e.target.value),
+            },
+              h('option', { value: 'netease' }, '网易云'),
+              h('option', { value: 'bilibili' }, 'B站'),
+              h('option', { value: 'kuwo' }, '酷我'),
+              h('option', { value: 'kugou' }, '酷狗'),
+              h('option', { value: 'qq' }, 'QQ音乐'),
+              h('option', { value: 'qishui' }, '汽水'),
+              h('option', { value: 'pan' }, '免费源'),
+              h('option', { value: '5sing' }, '5sing'),
+              h('option', { value: 'wusunk' }, '无损控')),
+            h('span', { className: 'dshmp-pgnum' }, '搜索页的初始渠道'))),
         h('div', { className: 'dshmp-set-block' },
           h('div', { className: 'dshmp-section' }, '快捷键'),
           h('div', { className: 'dshmp-empty' }, `默认 ${isMac ? '⌥ Option' : 'Ctrl+Alt'} + ←/→ 上一曲/下一曲 · P 播放暂停 · M 播放模式，可清除或重新录制`),

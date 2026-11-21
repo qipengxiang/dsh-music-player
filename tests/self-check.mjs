@@ -98,6 +98,9 @@ test('sanitizeState clamps pageSize, validates accent and hotkey strings', () =>
   assert.equal(good.settings.hotkeys.prev, 'Ctrl+ArrowLeft')
   const dflt = sanitizeState({})
   assert.equal(dflt.settings.pageSize, 10)
+  assert.equal(dflt.settings.defaultSource, 'bilibili') // 未配置时默认 B站（v0.4.29 起的默认渠道）
+  assert.equal(sanitizeState({ settings: { defaultSource: 'netease' } }).settings.defaultSource, 'netease')
+  assert.equal(sanitizeState({ settings: { defaultSource: 'qq音乐' } }).settings.defaultSource, 'bilibili') // 白名单外回落
   assert.equal(dflt.settings.accent, '')
   assert.ok(dflt.settings.hk === true) // seeded flag
 })
