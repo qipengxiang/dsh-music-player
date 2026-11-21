@@ -4,6 +4,16 @@ A mini music player plugin for the DSH desktop app (DeepSeek Harness): injects a
 
 [中文说明](README.zh.md)
 
+## Screenshots
+
+Mini player in the title bar (with progress bar and lyric row):
+
+![Mini player](assets/mini-player.webp)
+
+More (•••) popup — playlist / search / playlists & accounts, with local music and downloads sub-tabs:
+
+![More popup](assets/more-panel.webp)
+
 ## Features
 
 - **Play modes**: sequential / shuffle / single-loop (toggled at the bottom of the popup).
