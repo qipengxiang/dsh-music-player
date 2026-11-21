@@ -1,0 +1,4 @@
+- insert:
+  - id: dsh-music-player
+    name: 'dsh-music-player'
+    config: {}

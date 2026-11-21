@@ -1,0 +1,40 @@
+{
+  "name": "dsh-music-player",
+  "version": "0.4.19",
+  "description": "Mini music player for the top-right corner: local folders, playlists, multi-source search, downloads and lyrics",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./index.js",
+    "./client": "./client.js",
+    "./locale/*.json": "./locale/*.json",
+    "./icon": "./icon.svg"
+  },
+  "files": [
+    "index.js",
+    "client.js",
+    "server",
+    "locale",
+    "icon.svg",
+    "cordis.patch.yml"
+  ],
+  "dsh": {
+    "bundle": {
+      "patch": "cordis.patch.yml"
+    },
+    "client": {
+      "platform": "web",
+      "inject": [
+        "@deepseek-ai/dsh-client-ui-slots"
+      ]
+    },
+    "manifestVersion": 1
+  },
+  "scripts": {
+    "test": "node --test tests/self-check.mjs"
+  },
+  "dependencies": {
+    "qishui-music-api": "0.2.1",
+    "qrcode": "^1.5.4"
+  }
+}
