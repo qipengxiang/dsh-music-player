@@ -1068,8 +1068,8 @@ window.__ModuleLoader__.load({
 
     function SearchTab() {
       const [kind, setKind] = useState('song')
-      const [source, setSource] = useState('netease')
-      const [plSource, setPlSource] = useState('netease')
+      const [source, setSource] = useState('bilibili')
+      const [plSource, setPlSource] = useState('bilibili')
       const [q, setQ] = useState('')
       const [rows, setRows] = useState([])
       const [pls, setPls] = useState([])
