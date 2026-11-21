@@ -22,7 +22,6 @@ window.__ModuleLoader__.load({
       '.dshmp-track{flex:1;height:4px;border-radius:2px;background:rgba(128,138,152,.35);overflow:hidden}',
       '.dshmp-bar-fill{height:100%;background:#8ab4f8;border-radius:2px;transition:width .2s linear}',
       '.dshmp-time{color:var(--dsw-alias-label-tertiary);font-size:10px;font-variant-numeric:tabular-nums;min-width:32px;text-align:right}',
-      '.dshmp-err{color:var(--dsw-alias-state-danger,#e54d42);max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}',
       '.dshmp-lyric{position:absolute;top:50%;transform:translateY(calc(-50% - 5px));left:auto;right:8px;max-width:calc(100% - 16px);font:var(--dsw-font-xxs-12,12px sans-serif);color:transparent;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;pointer-events:none;text-align:left;--dshmp-lyr-pos:0%;background:linear-gradient(90deg,var(--dshmp-lyr-accent,#8ab4f8) var(--dshmp-lyr-pos),var(--dsw-alias-label-tertiary,#8a8f99) var(--dshmp-lyr-pos));-webkit-background-clip:text;background-clip:text}',
       '@property --dshmp-lyr-pos{syntax:\'<percentage>\';inherits:false;initial-value:0%}',
       '.dshmp-covertip{position:fixed;z-index:95;background:var(--dsw-alias-bg-layer-2,#2e2f33);color:var(--dsw-alias-label-primary,#fff);padding:4px 10px;border-radius:6px;font-size:12px;max-width:280px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;box-shadow:0 4px 14px rgb(0 0 0/.22);pointer-events:none}',
@@ -561,6 +560,10 @@ window.__ModuleLoader__.load({
     function MiniPlayer() {
       const s = useStore()
       const ref = useRef(null)
+      // 播放/切模式等错误统一走 toast，不再占播放器右侧的空间
+      useEffect(() => {
+        if (s.error) { showToast(s.error); store.error = '' }
+      }, [s.error])
       useEffect(() => {
         const done = mountLyrics()
         ;(async () => {
@@ -649,7 +652,6 @@ window.__ModuleLoader__.load({
               h('circle', { cx: '3.2', cy: '8', r: '1.35' }),
               h('circle', { cx: '8', cy: '8', r: '1.35' }),
               h('circle', { cx: '12.8', cy: '8', r: '1.35' })))),
-          s.error ? h('span', { className: 'dshmp-err', title: s.error }, s.error) : null,
           h(Pop)),
         h('div', { className: 'dshmp-row2', style: track ? null : { visibility: 'hidden' } },
           h('div', { className: 'dshmp-bar', onClick: seek },
