@@ -3,7 +3,7 @@ window.__ModuleLoader__.load({
   factory(require) {
     const React = require('react')
     const h = React.createElement
-    const { useEffect, useRef, useState } = React
+    const { useEffect, useMemo, useRef, useState } = React
 
     const API = '/dsh-music-player'
 
@@ -727,6 +727,30 @@ window.__ModuleLoader__.load({
           emit(); setDlSel(new Set()); setDlReload((k) => k + 1)
         } catch (e) { showToast(String(e.message ?? e)) }
       }
+      // 本地/自定义歌单铺平成歌曲列表（歌单名作为行首标签），平台歌单保持下方「加载」行
+      const flat = useMemo(() => {
+        const all = [], tags = []
+        for (const p of s.state.playlists) if (p.kind !== 'platform')
+          for (const t of (p.tracks ?? [])) { all.push(t); tags.push(p.name) }
+        return { all, tags }
+      }, [s.state.playlists])
+      const platformPls = s.state.playlists.filter((p) => p.kind === 'platform')
+      useEffect(() => { setTPage(1) }, [s.state.playlists])
+      // 首次打开铺平列表时惰性回填时长：就地改 track.duration 保持引用稳定，避免打断正在播放的高亮
+      useEffect(() => {
+        (async () => {
+          let touched = false
+          for (const p of store.state.playlists) {
+            if (p.kind === 'local' && (p.tracks ?? []).some((t) => !t.duration)) {
+              try {
+                const j = await api(`/playlist/tracks?id=${encodeURIComponent(p.id)}`)
+                ;(j.tracks ?? []).forEach((nt, i) => { if (nt?.duration && p.tracks[i] && !p.tracks[i].duration) { p.tracks[i].duration = nt.duration; touched = true } })
+              } catch {}
+            }
+          }
+          if (touched) emit()
+        })()
+      }, [])
       const load = async (pl) => {
         if (openId === pl.id) { setOpenId(null); return }
         setOpenId(pl.id)
@@ -847,10 +871,23 @@ window.__ModuleLoader__.load({
           }, '保存')))
       if (sub === 'dl') return h('div', null, subTabs, forms,
         h(DownloadsTab, { multi: dlMulti, sel: dlSel, toggle: dlToggle, onDelete: dlDelete, reloadKey: dlReload }))
+      const ps = store.state.settings.pageSize || 10
       return h('div', null, subTabs, forms,
         err && !adding ? h('div', { className: 'dshmp-empty' }, err) : null,
-        s.state.playlists.length === 0 && !adding ? h('div', { className: 'dshmp-empty' }, '还没有歌单，点右上 ＋ 添加一个吧') : null,
-        s.state.playlists.map(row))
+        flat.all.length === 0 && platformPls.length === 0 && !adding ? h('div', { className: 'dshmp-empty' }, '还没有本地音乐，点右上 ＋ 添加文件夹') : null,
+        pageSlice(flat.all, tpage).map((t, i) => {
+          const gi = (tpage - 1) * ps + i
+          return h('div', {
+            key: flat.tags[gi] + '/' + t.id + '/' + gi,
+            className: 'dshmp-rowitem' + (s.current && s.current.list === flat.all && s.current.index === gi ? ' playing' : ''),
+            onClick: () => playTrack(flat.all, gi),
+          },
+            h('span', { className: 't' }, t.vip ? h('span', { className: 'dshmp-vip' }, 'VIP') : null, flat.tags[gi] ? h('span', { className: 'dshmp-tag' }, flat.tags[gi]) : null, t.title),
+            h('span', { className: 'sub' }, t.artist || ''),
+            t.duration ? h('span', { className: 'dshmp-dur' }, fmtTime(t.duration)) : null)
+        }),
+        h(Pager, { total: flat.all.length, page: tpage, onChange: setTPage }),
+        platformPls.map(row))
     }
 
     // 已下载曲库：服务端 /downloads/tracks 返回的即本地可播 track（source:'local'，url=绝对路径）
