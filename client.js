@@ -706,15 +706,22 @@ window.__ModuleLoader__.load({
         h('button', { className: 'dshmp-th d', onClick: () => onSort('duration') }, '时长' + mark('duration')),
         h('span', { className: 'dshmp-th act' }, action || ''))
     }
-    // 所有歌曲列表共用同一行结构：可选勾选框 + 歌名 / 歌手 / 来源 / 时长 / 操作
+    // 多选时的勾选框放最右侧（与列头「选择」对齐），其余情况该列放操作按钮
     function SongRow({ t, playing, src, sub, chk, actions, onClick }) {
       return h('div', { className: 'dshmp-rowitem' + (playing ? ' playing' : ''), onClick },
-        chk ?? null,
         h('span', { className: 't' }, t.vip ? h('span', { className: 'dshmp-vip' }, 'VIP') : null, t.title),
         h('span', { className: 'sub' }, sub ?? (t.artist || '')),
         h('span', { className: 'dshmp-src' }, src ?? rowSource(t)),
         h('span', { className: 'dshmp-dur' }, t.duration ? fmtTime(t.duration) : ''),
-        h('span', { className: 'dshmp-act' }, actions ?? null))
+        h('span', { className: 'dshmp-act' }, chk ?? null, actions ?? null))
+    }
+    // 列头里的全选勾选框：部分选中显示为半选
+    function CheckAll({ all, some, onChange }) {
+      return h('input', {
+        className: 'dshmp-chk', type: 'checkbox', title: all ? '取消全选' : '全选',
+        checked: all, onChange,
+        ref: (el) => { if (el) el.indeterminate = !all && some },
+      })
     }
 
     const TrashIcon = () => h('svg', { viewBox: '0 0 24 24', width: '14', height: '14', fill: 'none', stroke: 'currentColor', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round', 'aria-hidden': 'true' },
@@ -849,6 +856,7 @@ window.__ModuleLoader__.load({
         else n.add(id)
         return n
       })
+      const dlToggleAll = (ids) => setDlSel(new Set(ids))
       const dlDelete = async (ids) => {
         try {
           store.state = await api('/download-delete', { method: 'POST', body: JSON.stringify({ ids }) })
@@ -999,7 +1007,7 @@ window.__ModuleLoader__.load({
             },
           }, '保存')))
       if (sub === 'dl') return h('div', null, subTabs, forms,
-        h(DownloadsTab, { multi: dlMulti, sel: dlSel, toggle: dlToggle, onDelete: dlDelete, reloadKey: dlReload }))
+        h(DownloadsTab, { multi: dlMulti, sel: dlSel, toggle: dlToggle, toggleAll: dlToggleAll, onDelete: dlDelete, reloadKey: dlReload }))
       const ps = store.state.settings.pageSize || 10
       return h('div', null, subTabs, forms,
         err && !adding ? h('div', { className: 'dshmp-empty' }, err) : null,
@@ -1018,7 +1026,7 @@ window.__ModuleLoader__.load({
     }
 
     // 已下载曲库：服务端 /downloads/tracks 返回的即本地可播 track（source:'local'，url=绝对路径）
-    function DownloadsTab({ multi, sel, toggle, onDelete, reloadKey }) {
+    function DownloadsTab({ multi, sel, toggle, toggleAll, onDelete, reloadKey }) {
       const s = useStore()
       const [tracks, setTracks] = useState(null)
       const [err, setErr] = useState('')
@@ -1032,8 +1040,13 @@ window.__ModuleLoader__.load({
       if (tracks.length === 0) return h('div', { className: 'dshmp-empty' }, '还没有下载歌曲，可在搜索结果点 ⬇ 下载')
       const ps = store.state.settings.pageSize || 10
       const view = sortRows(tracks, dsort)
+      const ids = view.map((t) => t.id)
+      const allSel = ids.length > 0 && ids.every((id) => sel.has(id))
       return h('div', { className: 'dshmp-tab-fill' },
-        h(TrackHead, { sort: dsort, onSort: (k) => setDSort(nextSort(dsort, k)), action: multi ? '选择' : '' }),
+        h(TrackHead, {
+          sort: dsort, onSort: (k) => setDSort(nextSort(dsort, k)),
+          action: multi ? h(CheckAll, { all: allSel, some: sel.size > 0, onChange: () => toggleAll(allSel ? [] : ids) }) : '',
+        }),
         h('div', { className: 'dshmp-tab-scroll' },
           pageSlice(view, dpage).map((t, i) => {
             const gi = (dpage - 1) * ps + i
@@ -1571,6 +1584,7 @@ window.__ModuleLoader__.load({
       }
       const [dlMulti, setDlMulti] = useState(false) // 下载音乐多选模式
       const [dlSel, setDlSel] = useState(() => new Set())
+      const dlAllSel = dlView.length > 0 && dlView.every((d) => dlSel.has(d.id))
       const field = (label, key, placeholder) => h('label', { className: 'dshmp-set-field' },
         h('span', {}, label),
         h('input', {
@@ -1704,7 +1718,15 @@ window.__ModuleLoader__.load({
                   },
                 }, '✕')))) : null),
           libTab === 'dl' && h('div', null,
-            h(TrackHead, { sort: dsort, onSort: (k) => setDSort(nextSort(dsort, k)), action: dlMulti ? '选择' : '操作' }),
+            h(TrackHead, {
+              sort: dsort, onSort: (k) => setDSort(nextSort(dsort, k)),
+              action: dlMulti
+                ? h(CheckAll, {
+                    all: dlAllSel, some: dlSel.size > 0,
+                    onChange: () => setDlSel(dlAllSel ? new Set() : new Set(dlView.map((d) => d.id))),
+                  })
+                : '操作',
+            }),
             pageSlice(dlView, sdpage).map((d, i) => h(SongRow, {
               key: 'sd' + d.id + '/' + i,
               t: d, playing: isCurrent(d),
