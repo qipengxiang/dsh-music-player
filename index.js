@@ -129,6 +129,18 @@ export function decodeText(buf) {
   }
 }
 
+/** 从文件名拆歌手与歌名：'0063程响-世界这么大还是遇见你' -> 程响 / 世界这么大还是遇见你。
+ *  shortcut: 只认文件名里的短横线，名字无分隔符且没写 ID3 的文件歌手留空 */
+export function parseTrackName(stem) {
+  const name = String(stem || '').trim()
+  const m = name.match(/^(.{1,60}?)\s*[-–—]\s*(.+)$/)
+  if (!m) return { title: name, artist: '' }
+  const artist = m[1].replace(/^[\s\d.、_#]+/, '').trim()
+  const title = m[2].trim()
+  if (!artist || !title) return { title: name, artist: '' }
+  return { title, artist }
+}
+
 export async function scanFolder(root) {
   const dir = resolve(String(root || ''))
   const info = await stat(dir)
@@ -147,10 +159,11 @@ export async function scanFolder(root) {
         const dot = entry.name.lastIndexOf('.')
         const ext = dot >= 0 ? entry.name.slice(dot).toLowerCase() : ''
         if (AUDIO_EXT.has(ext)) {
+          const named = parseTrackName(entry.name.slice(0, dot > 0 ? dot : undefined))
           tracks.push({
             id: 'local:' + full,
-            title: entry.name.slice(0, dot > 0 ? dot : undefined),
-            artist: '',
+            title: named.title,
+            artist: named.artist,
             url: full,
             cover: '',
             duration: 0,
@@ -524,10 +537,16 @@ export function apply(ctx) {
             return sendJSON(res, 400, { error: '该平台暂不支持歌单' })
           }
           if (pl.kind === 'local') {
-            // lazily backfill durations for tracks scanned before probing existed
+            // lazily backfill durations and the artist split for tracks scanned by older versions
             let changed = false
             for (const t of pl.tracks) {
-              if (t.duration > 0 || !t.url) continue
+              if (!t.url) continue
+              if (!t.artist) {
+                const stem = String(t.title || '').replace(/\.[a-z0-9]+$/i, '')
+                const named = parseTrackName(stem)
+                if (named.artist && named.artist !== t.artist) { t.title = named.title; t.artist = named.artist; changed = true }
+              }
+              if (t.duration > 0) continue
               const dur = await probeDuration(t.url)
               if (dur > 0) { t.duration = dur; changed = true }
             }

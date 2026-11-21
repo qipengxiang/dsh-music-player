@@ -852,7 +852,7 @@ window.__ModuleLoader__.load({
       const flat = useMemo(() => {
         const items = []
         for (const p of s.state.playlists) if (p.kind !== 'platform')
-          for (const t of (p.tracks ?? [])) items.push({ ...t, _pl: p.name })
+          for (const t of (p.tracks ?? [])) items.push(t)
         return items
       }, [s.state.playlists])
       const [lsort, setLSort] = useState({ key: '', dir: 1 })
@@ -1003,7 +1003,7 @@ window.__ModuleLoader__.load({
           const gi = (tpage - 1) * ps + i
           return h(SongRow, {
             key: 'l' + (t.id ?? '') + '/' + gi,
-            t, tag: t._pl, playing: isCurrent(t),
+            t, playing: isCurrent(t),
             onClick: () => playTrack(flatView, gi),
           })
         }),
@@ -1454,7 +1454,7 @@ window.__ModuleLoader__.load({
       const [err, setErr] = useState('')
       const [editing, setEditing] = useState(null) // downloads entry or {trackId} local track being edited
       const [login, setLogin] = useState(null) // platform login flow inside settings
-      const [localRows, setLocalRows] = useState(null) // 铺平后的本地歌曲（带 _pl 歌单名）
+      const [localRows, setLocalRows] = useState(null) // 铺平后的本地歌曲
       const [localErr, setLocalErr] = useState('')
       const [lreload, setLReload] = useState(0)
       const [lsort, setLSort] = useState({ key: '', dir: 1 })
@@ -1518,7 +1518,7 @@ window.__ModuleLoader__.load({
             for (const p of store.state.playlists ?? []) {
               if (p.kind !== 'local') continue
               const j = await api(`/playlist/tracks?id=${encodeURIComponent(p.id)}`)
-              for (const t of (j.tracks ?? [])) out.push({ ...t, _pl: p.name })
+              for (const t of (j.tracks ?? [])) out.push(t)
             }
             if (!dead) { setLocalRows(out); setLocalErr('') }
           } catch (e) { if (!dead) setLocalErr(String(e.message ?? e)) }
@@ -1679,7 +1679,7 @@ window.__ModuleLoader__.load({
             localView.length ? h(TrackHead, { sort: lsort, onSort: (k) => setLSort(nextSort(lsort, k)), action: '编辑' }) : null,
             pageSlice(localView, lpage).map((t, i) => h(SongRow, {
               key: 'sl' + (t.id ?? '') + '/' + i,
-              t, tag: t._pl, playing: isCurrent(t),
+              t, playing: isCurrent(t),
               onClick: () => playTrack(localView, (lpage - 1) * (store.state.settings.pageSize || 10) + i),
               actions: h('button', { className: 'dshmp-mini', title: '编辑信息', onClick: (e) => { e.stopPropagation(); startTrackEdit(t) } }, '编辑'),
             })),

@@ -450,6 +450,14 @@ test('sortRows sorts by title/artist/duration and nextSort cycles asc/desc/off',
   assert.deepEqual(nextSort({ key: 'title', dir: -1 }, 'title'), { key: '', dir: 1 })
 })
 
+test('parseTrackName splits 曲目号 歌手 - 歌名 from a filename', async () => {
+  const { parseTrackName } = await import('../index.js')
+  assert.deepEqual(parseTrackName('0063程响-世界这么大还是遇见你'), { title: '世界这么大还是遇见你', artist: '程响' })
+  assert.deepEqual(parseTrackName('01. 周杰伦 - 晴天'), { title: '晴天', artist: '周杰伦' })
+  assert.deepEqual(parseTrackName('2002年的第一场雪'), { title: '2002年的第一场雪', artist: '' })
+  assert.deepEqual(parseTrackName('晴天 - '), { title: '晴天 -', artist: '' })
+})
+
 test('probeDuration reads mp3 CBR/Xing and m4a mvhd durations', async () => {  const mod = await import('../index.js')
   const { mkdtemp, writeFile } = await import('node:fs/promises')
   const dir = await mkdtemp('/tmp/dshmp-dur-')
