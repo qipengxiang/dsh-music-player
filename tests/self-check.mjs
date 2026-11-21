@@ -433,6 +433,23 @@ test('search marks vip-only songs per platform (netease/qq/kugou field semantics
   } finally { globalThis.fetch = realFetch }
 })
 
+test('sortRows sorts by title/artist/duration and nextSort cycles asc/desc/off', async () => {
+  const { sortRows, nextSort } = (await loadClient()).plugin.__pure
+  const rows = [
+    { title: 'B 歌', artist: '张三', duration: 30 },
+    { title: 'A 歌', artist: '李四', duration: 100 },
+    { title: 'C 歌', artist: '王五', duration: 5 },
+  ]
+  assert.deepEqual(sortRows(rows, { key: 'duration', dir: 1 }).map((r) => r.duration), [5, 30, 100])
+  assert.deepEqual(sortRows(rows, { key: 'duration', dir: -1 }).map((r) => r.duration), [100, 30, 5])
+  assert.deepEqual(sortRows(rows, { key: 'title', dir: 1 }).map((r) => r.title), ['A 歌', 'B 歌', 'C 歌'])
+  assert.equal(sortRows(rows, { key: '', dir: 1 })[0].title, 'B 歌')
+  assert.deepEqual(rows.map((r) => r.title), ['B 歌', 'A 歌', 'C 歌'])
+  assert.deepEqual(nextSort({ key: '', dir: 1 }, 'title'), { key: 'title', dir: 1 })
+  assert.deepEqual(nextSort({ key: 'title', dir: 1 }, 'title'), { key: 'title', dir: -1 })
+  assert.deepEqual(nextSort({ key: 'title', dir: -1 }, 'title'), { key: '', dir: 1 })
+})
+
 test('probeDuration reads mp3 CBR/Xing and m4a mvhd durations', async () => {  const mod = await import('../index.js')
   const { mkdtemp, writeFile } = await import('node:fs/promises')
   const dir = await mkdtemp('/tmp/dshmp-dur-')

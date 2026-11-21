@@ -23,7 +23,7 @@ window.__ModuleLoader__.load({
       '.dshmp-bar-fill{height:100%;background:#8ab4f8;border-radius:2px;transition:width .2s linear}',
       '.dshmp-time{color:var(--dsw-alias-label-tertiary);font-size:10px;font-variant-numeric:tabular-nums;min-width:32px;text-align:right}',
       '.dshmp-err{color:var(--dsw-alias-state-danger,#e54d42);max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}',
-      '.dshmp-lyric{position:absolute;top:50%;transform:translateY(calc(-50% - 5px));left:auto;right:8px;max-width:calc(100% - 16px);font:var(--dsw-font-xxs-12,12px sans-serif);color:transparent;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;pointer-events:none;text-align:left;--dshmp-lyr-pos:0%;background:linear-gradient(90deg,var(--dshmp-lyr-accent,#8ab4f8) var(--dshmp-lyr-pos),var(--dsw-alias-label-tertiary,#8a8f99) var(--dshmp-lyr-pos));-webkit-background-clip:text;background-clip:text;transition:--dshmp-lyr-pos .25s linear}',
+      '.dshmp-lyric{position:absolute;top:50%;transform:translateY(calc(-50% - 5px));left:auto;right:8px;max-width:calc(100% - 16px);font:var(--dsw-font-xxs-12,12px sans-serif);color:transparent;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;pointer-events:none;text-align:left;--dshmp-lyr-pos:0%;background:linear-gradient(90deg,var(--dshmp-lyr-accent,#8ab4f8) var(--dshmp-lyr-pos),var(--dsw-alias-label-tertiary,#8a8f99) var(--dshmp-lyr-pos));-webkit-background-clip:text;background-clip:text}',
       '@property --dshmp-lyr-pos{syntax:\'<percentage>\';inherits:false;initial-value:0%}',
       '.dshmp-covertip{position:fixed;z-index:95;background:var(--dsw-alias-bg-layer-2,#2e2f33);color:var(--dsw-alias-label-primary,#fff);padding:4px 10px;border-radius:6px;font-size:12px;max-width:280px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;box-shadow:0 4px 14px rgb(0 0 0/.22);pointer-events:none}',
       '.dshmp-pop{position:fixed;z-index:80;width:min(400px,92vw);max-height:min(460px,70vh);display:flex;flex-direction:column;background:var(--dsw-alias-bg-layer-1,#fff);border:1px solid var(--dsw-alias-border-l2,#ddd);border-radius:var(--dsw-radius-md,8px);box-shadow:0 8px 24px rgb(0 0 0/.16);overflow:hidden}',
@@ -54,7 +54,7 @@ window.__ModuleLoader__.load({
       '.dshmp-rowitem{display:flex;align-items:center;gap:6px;padding:5px 6px;border-radius:var(--dsw-radius-sm,4px);cursor:pointer;font-size:12px;color:var(--dsh-alias-label-secondary,var(--dsw-alias-label-secondary))}',
       '.dshmp-rowitem:hover{background:var(--dsw-alias-interactive-bg-hover)}',
       '.dshmp-rowitem .t{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}',
-      '.dshmp-rowitem .sub{color:var(--dsw-alias-label-tertiary);font-size:11px;flex:none;max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}',
+      '.dshmp-rowitem .sub{color:var(--dsw-alias-label-tertiary);font-size:11px;flex:none;width:96px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}',
       '.dshmp-rowitem .x{flex:none;opacity:.55;font-size:11px}',
       '.dshmp-rowitem .x:hover{opacity:1;color:var(--dsh-alias-state-danger,var(--dsw-alias-state-danger,#e54d42))}',
       '.dshmp-rowitem.playing .t{color:var(--dsw-alias-state-business-primary)}',
@@ -67,12 +67,23 @@ window.__ModuleLoader__.load({
       '.dshmp-mini:disabled{opacity:.4;cursor:default}',
       '.dshmp-vip{display:inline-block;font-size:10px;line-height:1;padding:2px 3px;margin-right:5px;border-radius:3px;color:#e6a23c;border:1px solid currentColor;vertical-align:1px;flex:none}',
       '.dshmp-tag{display:inline-block;font-size:10px;line-height:1;padding:2px 4px;margin-right:5px;border-radius:3px;color:var(--dsw-alias-label-secondary);border:1px solid var(--dsw-alias-border-l2,#c8c8c8);vertical-align:1px;flex:none}',
-      '.dshmp-dur{flex:none;font-size:11px;color:var(--dsw-alias-label-tertiary,#999);min-width:32px;text-align:right}',
+      '.dshmp-dur{flex:none;width:40px;font-size:11px;color:var(--dsw-alias-label-tertiary,#999);text-align:right;white-space:nowrap}',
+      '.dshmp-thead{display:flex;align-items:center;gap:6px;padding:0 6px 2px;border-bottom:1px solid var(--dsw-alias-border-l2,#eee);flex:none}',
+      '.dshmp-th{appearance:none;border:none;background:0 0;color:var(--dsw-alias-label-tertiary);font-size:11px;cursor:pointer;padding:2px 0;text-align:left;flex:none;white-space:nowrap}',
+      '.dshmp-th:hover{color:var(--dsw-alias-label-primary)}',
+      '.dshmp-th.t{flex:1;overflow:hidden;text-overflow:ellipsis}',
+      '.dshmp-th.s{width:96px}',
+      '.dshmp-th.d{width:40px;text-align:right}',
+      '.dshmp-th.act{width:26px}',
+      '.dshmp-act2{display:flex;align-items:center;gap:2px;flex:none}',
+      '.dshmp-libline{display:flex;flex-wrap:wrap;align-items:center;gap:6px;padding:6px;font-size:11px;color:var(--dsw-alias-label-tertiary)}',
+      '.dshmp-xbtn{appearance:none;border:none;background:0 0;color:inherit;cursor:pointer;padding:0 0 0 2px;font-size:10px;line-height:1;opacity:.7}',
+      '.dshmp-xbtn:hover{opacity:1;color:var(--dsw-alias-state-danger,#e54d42)}',
       '.dshmp-delwrap{position:relative;flex:none;display:inline-flex}',
       '.dshmp-delbtn{appearance:none;border:none;background:0 0;cursor:pointer;padding:3px;border-radius:var(--dsw-radius-sm,4px);color:var(--dsh-alias-state-danger,var(--dsw-alias-state-danger,#e54d42));display:inline-flex;align-items:center;justify-content:center}',
       '.dshmp-delbtn:hover{background:var(--dsw-alias-interactive-bg-hover)}',
       '.dshmp-delbtn svg{width:14px;height:14px;display:block}',
-      '.dshmp-popconfirm{position:absolute;right:0;top:calc(100% + 6px);z-index:96;display:flex;flex-direction:column;gap:8px;padding:10px 12px;min-width:176px;background:var(--dsw-alias-bg-layer-2,#fff);border:1px solid var(--dsw-alias-border-l2,#ddd);border-radius:var(--dsw-radius-md,8px);box-shadow:0 6px 18px rgb(0 0 0/.18);font-size:12px;color:var(--dsw-alias-label-primary);white-space:nowrap}',
+      '.dshmp-popconfirm{position:fixed;z-index:120;max-height:60vh;overflow:auto;display:flex;flex-direction:column;gap:8px;padding:10px 12px;min-width:176px;background:var(--dsw-alias-bg-layer-2,#fff);border:1px solid var(--dsw-alias-border-l2,#ddd);border-radius:var(--dsw-radius-md,8px);box-shadow:0 6px 18px rgb(0 0 0/.18);font-size:12px;color:var(--dsw-alias-label-primary);white-space:nowrap}',
       '.dshmp-popconfirm-btns{display:flex;gap:6px;justify-content:flex-end}',
       '.dshmp-mini.danger{color:#fff;background:var(--dsh-alias-state-danger,var(--dsw-alias-state-danger,#e54d42));font-weight:600}',
       '.dshmp-mini.danger:hover{background:var(--dsh-alias-state-danger,var(--dsw-alias-state-danger,#e54d42));filter:brightness(.9)}',
@@ -444,7 +455,7 @@ window.__ModuleLoader__.load({
     function lyricLineAt(t) {
       let idx = -1
       for (let i = 0; i < store.lyric.length; i += 1) {
-        if (store.lyric[i].t <= t + 0.35) idx = i
+        if (store.lyric[i].t <= t + 0.08) idx = i
         else break
       }
       return idx
@@ -466,6 +477,12 @@ window.__ModuleLoader__.load({
       ensure()
       const observer = new MutationObserver(ensure)
       observer.observe(document.body, { childList: true, subtree: true })
+      // 用音频真实进度逐帧刷新：4Hz 的 timeupdate 跟不上人声，渐变会落后半拍
+      const audioTime = () => {
+        const a = typeof globalThis !== 'undefined' ? globalThis.__dshmpAudio : null
+        if (a && !a.paused && Number.isFinite(a.currentTime)) return a.currentTime
+        return store.t
+      }
       const update = () => {
         const el = document.querySelector('.dshmp-lyric')
         if (!el) return
@@ -476,18 +493,20 @@ window.__ModuleLoader__.load({
           return
         }
         el.style.display = ''
-        const idx = lyricLineAt(store.t)
+        const t = audioTime()
+        const idx = lyricLineAt(t)
         const hasLyr = store.lyric.length > 0
         const line =
           (hasLyr && (store.lyric[idx]?.text ?? store.lyric[0].text)) ||
           `${track.title}${track.artist ? ' - ' + track.artist : ''} · 无歌词`
-        // 当前行内的已播比例：渐变分界可落在半个字上，过渡平滑
+        // 当前行内的已播比例：换行时直接归零，不做插值回退
         let frac = 0
         if (hasLyr && idx >= 0) {
           const cur = store.lyric[idx]
           const end = store.lyric[idx + 1]?.t ?? (store.dur > cur.t ? store.dur : cur.t + 6)
-          frac = end > cur.t ? Math.min(1, Math.max(0, (store.t + 0.35 - cur.t) / (end - cur.t))) : 1
+          frac = end > cur.t ? Math.min(1, Math.max(0, (t - cur.t) / (end - cur.t))) : 1
         }
+
         if (el.textContent !== line) el.textContent = line
         el.style.setProperty('--dshmp-lyr-accent', accentOf())
         el.style.setProperty('--dshmp-lyr-pos', `${(frac * 100).toFixed(1)}%`)
@@ -497,10 +516,23 @@ window.__ModuleLoader__.load({
           el.style.left = `${Math.max(0, left)}px`
         }
       }
-      store.listeners.add(update)
+      let raf = 0
+      const tick = () => {
+        raf = 0
+        update()
+        const a = typeof globalThis !== 'undefined' ? globalThis.__dshmpAudio : null
+        if (store.playing && a && !a.paused && typeof requestAnimationFrame !== 'undefined') raf = requestAnimationFrame(tick)
+      }
+      const kick = () => {
+        if (!raf && typeof requestAnimationFrame !== 'undefined') raf = requestAnimationFrame(tick)
+        else if (raf) return
+        else update()
+      }
+      store.listeners.add(kick)
       return () => {
         observer.disconnect()
-        store.listeners.delete(update)
+        if (raf && typeof cancelAnimationFrame !== 'undefined') cancelAnimationFrame(raf)
+        store.listeners.delete(kick)
         document.querySelector('.dshmp-lyric')?.remove()
       }
     }
@@ -639,6 +671,45 @@ window.__ModuleLoader__.load({
       return (arr ?? []).slice((page - 1) * ps, page * ps)
     }
 
+    // 列头排序：key=title|artist|duration，dir=1 升序 / -1 降序
+    function sortRows(rows, sort) {
+      if (!sort || !sort.key) return rows
+      const dir = sort.dir < 0 ? -1 : 1
+      const val = (r) => (sort.key === 'duration' ? Number(r?.duration) || 0 : String(r?.[sort.key] ?? ''))
+      return rows
+        .map((r, i) => [r, i])
+        .sort((a, b) => {
+          const x = val(a[0]), y = val(b[0])
+          const c = typeof x === 'number' && typeof y === 'number'
+            ? x - y
+            : String(x).localeCompare(String(y), 'zh-Hans-CN')
+          return c * dir || a[1] - b[1]
+        })
+        .map((pair) => pair[0])
+    }
+    function nextSort(sort, key) {
+      if (sort.key !== key) return { key, dir: 1 }
+      return sort.dir >= 0 ? { key, dir: -1 } : { key: '', dir: 1 }
+    }
+    function TrackHead({ sort, onSort, action }) {
+      const mark = (k) => (sort.key === k ? (sort.dir < 0 ? ' ▼' : ' ▲') : '')
+      return h('div', { className: 'dshmp-thead' },
+        h('button', { className: 'dshmp-th t', onClick: () => onSort('title') }, '歌名' + mark('title')),
+        h('button', { className: 'dshmp-th s', onClick: () => onSort('artist') }, '歌手' + mark('artist')),
+        h('button', { className: 'dshmp-th d', onClick: () => onSort('duration') }, '时长' + mark('duration')),
+        h('span', { className: 'dshmp-th act' }, action || ''))
+    }
+    // 所有歌曲列表共用同一行结构：可选勾选框 + 标签 + 歌名 / 歌手 / 时长 / 操作
+    function SongRow({ t, playing, tag, sub, chk, actions, onClick }) {
+      return h('div', { className: 'dshmp-rowitem' + (playing ? ' playing' : ''), onClick },
+        chk ?? null,
+        h('span', { className: 't' }, t.vip ? h('span', { className: 'dshmp-vip' }, 'VIP') : null,
+          tag ? h('span', { className: 'dshmp-tag' }, tag) : null, t.title),
+        h('span', { className: 'sub' }, sub ?? (t.artist || '')),
+        h('span', { className: 'dshmp-dur' }, t.duration ? fmtTime(t.duration) : ''),
+        actions ?? null)
+    }
+
     const TrashIcon = () => h('svg', { viewBox: '0 0 24 24', width: '14', height: '14', fill: 'none', stroke: 'currentColor', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round', 'aria-hidden': 'true' },
       h('path', { d: 'M3 6h18' }),
       h('path', { d: 'M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6' }),
@@ -646,12 +717,56 @@ window.__ModuleLoader__.load({
       h('line', { x1: 10, y1: 11, x2: 10, y2: 17 }),
       h('line', { x1: 14, y1: 11, x2: 14, y2: 17 }))
 
-    // 删除气泡确认：红色图标/文字按钮 + 悬浮确认气泡
+    function isCurrent(t) {
+      const cur = store.current
+      const tr = cur && cur.list && cur.list[cur.index]
+      return !!(tr && t && ((t.id != null && tr.id === t.id) || (tr.title === t.title && tr.artist === t.artist)))
+    }
+
+    // 删除气泡确认：fixed 定位，脱离所有滚动容器的裁剪，保证一定可见
     function PopConfirm({ label, title, btnClass, hint, disabled, onConfirm }) {
       const [open, setOpen] = useState(false)
+      const [pos, setPos] = useState(null)
+      const btnRef = useRef(null)
+      const toggle = (e) => {
+        e.stopPropagation()
+        if (open) { setOpen(false); return }
+        const r = btnRef.current?.getBoundingClientRect()
+        if (r) {
+          const hgt = 104 // 气泡估算高度：放不下就翻到按钮上方，再夹进视口
+          const below = r.bottom + 6
+          const top = Math.min(Math.max(8, below + hgt > window.innerHeight ? r.top - 6 - hgt : below), Math.max(8, window.innerHeight - hgt - 8))
+          setPos({ top, right: Math.max(8, window.innerWidth - r.right) })
+        }
+        setOpen(true)
+      }
+      useEffect(() => {
+        if (!open) return
+        const onDown = (e) => {
+          const t = e.target
+          if (t && typeof t.closest === 'function' && (t.closest('.dshmp-popconfirm') || t.closest('.dshmp-delwrap'))) return
+          setOpen(false)
+        }
+        const onMove = () => setOpen(false) // fixed 气泡不跟随滚动，滚走即关
+        const timer = setTimeout(() => {
+          document.addEventListener('mousedown', onDown, true)
+          window.addEventListener('scroll', onMove, true)
+          window.addEventListener('resize', onMove)
+        }, 0)
+        return () => {
+          clearTimeout(timer)
+          document.removeEventListener('mousedown', onDown, true)
+          window.removeEventListener('scroll', onMove, true)
+          window.removeEventListener('resize', onMove)
+        }
+      }, [open])
       return h('span', { className: 'dshmp-delwrap' },
-        h('button', { className: btnClass, title: title || '删除', disabled: !!disabled, onClick: (e) => { e.stopPropagation(); setOpen(!open) } }, label),
-        open ? h('span', { className: 'dshmp-popconfirm', onClick: (e) => e.stopPropagation() },
+        h('button', { ref: btnRef, className: btnClass, title: title || '删除', disabled: !!disabled, onClick: toggle }, label),
+        open && pos ? h('span', {
+          className: 'dshmp-popconfirm',
+          style: { top: `${pos.top}px`, right: `${pos.right}px` },
+          onClick: (e) => e.stopPropagation(),
+        },
           h('span', {}, hint || '删除后不可恢复'),
           h('span', { className: 'dshmp-popconfirm-btns' },
             h('button', {
@@ -735,11 +850,13 @@ window.__ModuleLoader__.load({
       }
       // 本地/自定义歌单铺平成歌曲列表（歌单名作为行首标签），平台歌单保持下方「加载」行
       const flat = useMemo(() => {
-        const all = [], tags = []
+        const items = []
         for (const p of s.state.playlists) if (p.kind !== 'platform')
-          for (const t of (p.tracks ?? [])) { all.push(t); tags.push(p.name) }
-        return { all, tags }
+          for (const t of (p.tracks ?? [])) items.push({ ...t, _pl: p.name })
+        return items
       }, [s.state.playlists])
+      const [lsort, setLSort] = useState({ key: '', dir: 1 })
+      const flatView = useMemo(() => sortRows(flat, lsort), [flat, lsort])
       const platformPls = s.state.playlists.filter((p) => p.kind === 'platform')
       useEffect(() => { setTPage(1) }, [s.state.playlists])
       // 首次打开铺平列表时惰性回填时长：就地改 track.duration 保持引用稳定，避免打断正在播放的高亮
@@ -880,19 +997,17 @@ window.__ModuleLoader__.load({
       const ps = store.state.settings.pageSize || 10
       return h('div', null, subTabs, forms,
         err && !adding ? h('div', { className: 'dshmp-empty' }, err) : null,
-        flat.all.length === 0 && platformPls.length === 0 && !adding ? h('div', { className: 'dshmp-empty' }, '还没有本地音乐，点右上 ＋ 添加文件夹') : null,
-        pageSlice(flat.all, tpage).map((t, i) => {
+        flat.length === 0 && platformPls.length === 0 && !adding ? h('div', { className: 'dshmp-empty' }, '还没有本地音乐，点右上 ＋ 添加文件夹') : null,
+        flat.length ? h(TrackHead, { sort: lsort, onSort: (k) => setLSort(nextSort(lsort, k)) }) : null,
+        pageSlice(flatView, tpage).map((t, i) => {
           const gi = (tpage - 1) * ps + i
-          return h('div', {
-            key: flat.tags[gi] + '/' + t.id + '/' + gi,
-            className: 'dshmp-rowitem' + (s.current && s.current.list === flat.all && s.current.index === gi ? ' playing' : ''),
-            onClick: () => playTrack(flat.all, gi),
-          },
-            h('span', { className: 't' }, t.vip ? h('span', { className: 'dshmp-vip' }, 'VIP') : null, flat.tags[gi] ? h('span', { className: 'dshmp-tag' }, flat.tags[gi]) : null, t.title),
-            h('span', { className: 'sub' }, t.artist || ''),
-            t.duration ? h('span', { className: 'dshmp-dur' }, fmtTime(t.duration)) : null)
+          return h(SongRow, {
+            key: 'l' + (t.id ?? '') + '/' + gi,
+            t, tag: t._pl, playing: isCurrent(t),
+            onClick: () => playTrack(flatView, gi),
+          })
         }),
-        h(Pager, { total: flat.all.length, page: tpage, onChange: setTPage }),
+        h(Pager, { total: flatView.length, page: tpage, onChange: setTPage }),
         platformPls.map(row))
     }
 
@@ -902,6 +1017,7 @@ window.__ModuleLoader__.load({
       const [tracks, setTracks] = useState(null)
       const [err, setErr] = useState('')
       const [dpage, setDPage] = useState(1)
+      const [dsort, setDSort] = useState({ key: '', dir: 1 })
       useEffect(() => {
         api('/downloads/tracks').then((j) => setTracks(j.tracks ?? [])).catch((e) => setErr(String(e.message ?? e)))
       }, [reloadKey])
@@ -909,25 +1025,24 @@ window.__ModuleLoader__.load({
       if (!tracks) return h('div', { className: 'dshmp-empty' }, '加载中…')
       if (tracks.length === 0) return h('div', { className: 'dshmp-empty' }, '还没有下载歌曲，可在搜索结果点 ⬇ 下载')
       const ps = store.state.settings.pageSize || 10
+      const view = sortRows(tracks, dsort)
       return h('div', { className: 'dshmp-tab-fill' },
+        h(TrackHead, { sort: dsort, onSort: (k) => setDSort(nextSort(dsort, k)), action: multi ? '选择' : '' }),
         h('div', { className: 'dshmp-tab-scroll' },
-          pageSlice(tracks, dpage).map((t, i) => {
+          pageSlice(view, dpage).map((t, i) => {
             const gi = (dpage - 1) * ps + i
-            return h('div', {
-              key: t.id + gi,
-              className: 'dshmp-rowitem' + (s.current && s.current.list === tracks && s.current.index === gi ? ' playing' : ''),
-              onClick: () => (multi ? toggle(t.id) : playTrack(tracks, gi)),
-            },
-              multi ? h('input', { className: 'dshmp-chk', type: 'checkbox', checked: sel.has(t.id), readOnly: true }) : null,
-              h('span', { className: 't' }, t.origin ? h('span', { className: 'dshmp-tag' }, sourceLabel(t.origin)) : null, t.title),
-              h('span', { className: 'sub' }, t.artist || ''),
-              t.duration ? h('span', { className: 'dshmp-dur' }, fmtTime(t.duration)) : null,
-              multi ? null : h(PopConfirm, {
+            return h(SongRow, {
+              key: 'dl' + (t.id ?? '') + '/' + gi,
+              t, tag: t.origin ? sourceLabel(t.origin) : '', playing: isCurrent(t),
+              chk: multi ? h('input', { className: 'dshmp-chk', type: 'checkbox', checked: sel.has(t.id), readOnly: true }) : null,
+              onClick: () => (multi ? toggle(t.id) : playTrack(view, gi)),
+              actions: multi ? null : h(PopConfirm, {
                 btnClass: 'dshmp-delbtn', label: h(TrashIcon), title: '删除',
                 hint: `删除「${t.title}」的下载文件？`, onConfirm: () => onDelete([t.id]),
-              }))
+              }),
+            })
           }),
-          h(Pager, { total: tracks.length, page: dpage, onChange: setDPage })))
+          h(Pager, { total: view.length, page: dpage, onChange: setDPage })))
     }
 
     const PAGE_SIZE = { netease: 30, kuwo: 30, kugou: 30, qq: 30, qishui: 30, pan: 30, bilibili: 20, '5sing': 20, wusunk: 9999 }
@@ -943,6 +1058,7 @@ window.__ModuleLoader__.load({
       const [err, setErr] = useState('')
       const [dlMsg, setDlMsg] = useState('')
       const [page, setPage] = useState(1)
+      const [ssort, setSSort] = useState({ key: '', dir: 1 })
       const doSearch = async (targetPage) => {
         targetPage = safePage(targetPage) // onClick: doSearch 会把 MouseEvent 传进来
         setBusy(true); setErr(''); setRows([]); setPls([]); setDlMsg('')
@@ -969,6 +1085,7 @@ window.__ModuleLoader__.load({
           setDlMsg(`网盘链接已复制：${link}`)
         } catch (e) { setDlMsg(String(e.message ?? e)) }
       }
+      const rowsView = useMemo(() => sortRows(rows, ssort), [rows, ssort])
       const hasMore = rows.length >= (PAGE_SIZE[source] ?? 30)
       return h('div', { className: 'dshmp-tab-fill' },
         h('div', { style: { display: 'flex', gap: 4, marginBottom: 4, flex: 'none' } },
@@ -993,12 +1110,14 @@ window.__ModuleLoader__.load({
         err ? h('div', { className: 'dshmp-empty' }, err) : null,
         dlMsg ? h('div', { className: 'dshmp-empty' }, dlMsg) : null,
         !err && busy ? h('div', { className: 'dshmp-empty' }, '搜索中…') : null,
+        kind === 'song' && rows.length ? h(TrackHead, { sort: ssort, onSort: (k) => setSSort(nextSort(ssort, k)), action: '下载' }) : null,
         h('div', { className: 'dshmp-tab-scroll' },
-          rows.map((t, i) => h('div', { key: t.id + i, className: 'dshmp-rowitem', onClick: () => ((t.source === 'pan' || t.source === 'wusunk') ? panClick(t) : playTrack(rows, i)) },
-          h('span', { className: 't' }, t.vip ? h('span', { className: 'dshmp-vip' }, 'VIP') : null, t.title),
-          h('span', { className: 'sub' }, `${t.artist || ''} · ${sourceLabel(t.source)}`),
-          t.duration ? h('span', { className: 'dshmp-dur' }, fmtTime(t.duration)) : null,
-          t.source !== 'pan' && t.source !== 'wusunk' ? h(DlBtn, { key: 'dl', t, onMsg: setDlMsg }) : null)),
+          rowsView.map((t, i) => h(SongRow, {
+            key: 's' + t.id + '/' + i, t, playing: isCurrent(t),
+            sub: `${t.artist || ''} · ${sourceLabel(t.source)}`,
+            onClick: () => ((t.source === 'pan' || t.source === 'wusunk') ? panClick(t) : playTrack(rowsView, i)),
+            actions: t.source !== 'pan' && t.source !== 'wusunk' ? h(DlBtn, { t, onMsg: setDlMsg }) : null,
+          })),
         pls.map((p) => h('div', {
           key: p.id, className: 'dshmp-rowitem',
           onClick: async () => {
@@ -1335,9 +1454,11 @@ window.__ModuleLoader__.load({
       const [err, setErr] = useState('')
       const [editing, setEditing] = useState(null) // downloads entry or {trackId} local track being edited
       const [login, setLogin] = useState(null) // platform login flow inside settings
-      const [openLocal, setOpenLocal] = useState('') // local playlist id whose tracks are expanded
-      const [localTracks, setLocalTracks] = useState(null)
+      const [localRows, setLocalRows] = useState(null) // 铺平后的本地歌曲（带 _pl 歌单名）
       const [localErr, setLocalErr] = useState('')
+      const [lreload, setLReload] = useState(0)
+      const [lsort, setLSort] = useState({ key: '', dir: 1 })
+      const [dsort, setDSort] = useState({ key: '', dir: 1 })
       const [libTab, setLibTab] = useState('local') // 本地音乐 / 下载音乐
       const [lpage, setLPage] = useState(1)
       const [sdpage, setSdPage] = useState(1)
@@ -1386,20 +1507,26 @@ window.__ModuleLoader__.load({
         lyricist: d.lyricist, composer: d.composer, cover: '',
       })
       const startTrackEdit = (t) => setEditing({ trackId: t.id, title: t.title, artist: t.artist || '' })
-      const refreshLocal = () => {
-        if (!openLocal) return
-        api(`/playlist/tracks?id=${encodeURIComponent(openLocal)}`)
-          .then((j) => setLocalTracks(j.tracks ?? []))
-          .catch((e) => setLocalErr(String(e.message ?? e)))
-      }
-      const loadLocal = (id) => {
-        setLocalErr(''); setLocalTracks(null); setLPage(1)
-        if (openLocal === id) { setOpenLocal(''); return }
-        setOpenLocal(id)
-        api(`/playlist/tracks?id=${encodeURIComponent(id)}`)
-          .then((j) => setLocalTracks(j.tracks ?? []))
-          .catch((e) => setLocalErr(String(e.message ?? e)))
-      }
+      // 本地音乐铺平成歌曲列表（与更多弹窗一致），直接展示歌曲而不是歌单行
+      const locals = (s.state.playlists ?? []).filter((p) => p.kind === 'local')
+      const localSig = locals.map((p) => `${p.id}:${(p.tracks ?? []).length}`).join('|')
+      useEffect(() => {
+        let dead = false
+        ;(async () => {
+          const out = []
+          try {
+            for (const p of store.state.playlists ?? []) {
+              if (p.kind !== 'local') continue
+              const j = await api(`/playlist/tracks?id=${encodeURIComponent(p.id)}`)
+              for (const t of (j.tracks ?? [])) out.push({ ...t, _pl: p.name })
+            }
+            if (!dead) { setLocalRows(out); setLocalErr('') }
+          } catch (e) { if (!dead) setLocalErr(String(e.message ?? e)) }
+        })()
+        return () => { dead = true }
+      }, [localSig, lreload])
+      const localView = useMemo(() => sortRows(localRows ?? [], lsort), [localRows, lsort])
+      const dlView = useMemo(() => sortRows(s.state.downloads ?? [], dsort), [s.state.downloads, dsort])
       const saveAll = async () => {
         try {
           const body = { pageSize: Number(psz) || 10, accent: accentTmp }
@@ -1413,7 +1540,7 @@ window.__ModuleLoader__.load({
         try {
           if (editing.trackId) {
             store.state = await api('/playlist/track-update', { method: 'POST', body: JSON.stringify({ id: editing.trackId, title: editing.title, artist: editing.artist }) })
-            setEditing(null); emit(); refreshLocal(); showToast('已保存')
+            setEditing(null); emit(); setLReload((k) => k + 1); showToast('已保存')
             return
           }
           store.state = await api('/download-update', { method: 'POST', body: JSON.stringify(editing) })
@@ -1425,6 +1552,17 @@ window.__ModuleLoader__.load({
         try { store.state = await api('/download-delete', { method: 'POST', body: JSON.stringify({ ids }) }); emit(); setDlSel(new Set()) }
         catch (e) { setErr(String(e.message ?? e)) }
       }
+      const pickDownloadDir = async () => {
+        try {
+          const ws = clientCtx && typeof clientCtx.get === 'function' ? clientCtx.get('uiWorkspace') : null
+          if (!ws || typeof ws.pickDirectory !== 'function') { showToast('当前环境不支持目录选择，请手动输入'); return }
+          const picked = await ws.pickDirectory()
+          if (!picked) return
+          setDir(picked)
+          store.state = await api('/settings', { method: 'POST', body: JSON.stringify({ downloadDir: picked }) })
+          emit(); showToast('下载目录已更新')
+        } catch (e) { showToast(String(e.message ?? e)) }
+      }
       const [dlMulti, setDlMulti] = useState(false) // 下载音乐多选模式
       const [dlSel, setDlSel] = useState(() => new Set())
       const field = (label, key, placeholder) => h('label', { className: 'dshmp-set-field' },
@@ -1433,7 +1571,6 @@ window.__ModuleLoader__.load({
           className: 'dshmp-input', value: editing?.[key] ?? '',
           placeholder, onChange: (e) => setEditing({ ...editing, [key]: e.target.value }),
         }))
-      const locals = (s.state.playlists ?? []).filter((p) => p.kind === 'local')
       const saveBar = h('div', { className: 'dshmp-setfoot' + (props.modal ? '' : ' flat') },
         props.modal ? h('span', { className: 'grow dshmp-pgnum' }, '修改后点击保存生效') : null,
         h('button', { className: 'dshmp-mini primary', onClick: saveAll }, '保存'))
@@ -1496,7 +1633,8 @@ window.__ModuleLoader__.load({
             h('input', {
               className: 'dshmp-input', placeholder: '默认 ~/Music/dsh-music-player',
               value: dir, onChange: (e) => setDir(e.target.value),
-            }))),
+            }),
+            h('button', { className: 'dshmp-mini', title: '选择下载目录', onClick: pickDownloadDir }, '选择…'))),
         h('div', { className: 'dshmp-set-block' },
           h('div', { className: 'dshmp-section' }, '显示与颜色'),
           h('div', { className: 'dshmp-set-field' },
@@ -1535,38 +1673,37 @@ window.__ModuleLoader__.load({
             }, dlMulti ? '取消多选' : '多选') : null,
             h('button', { className: 'dshmp-mini dshmp-addbtn', title: '播放全部', onClick: () => (libTab === 'local' ? playAllLocal() : playDownloads()) }, '▶ 播放全部')),
           libTab === 'local' && h('div', null,
-            locals.length === 0 ? h('div', { className: 'dshmp-empty' }, '暂无本地歌单（在更多弹窗的播放列表页添加）') : null,
-            locals.map((pl) => h('div', { key: pl.id },
-            h('div', { className: 'dshmp-rowitem' },
-              h('span', { className: 't' }, `${pl.name}（${pl.tracks.length} 首）`),
-              h('button', { className: 'dshmp-mini', onClick: () => loadLocal(pl.id) }, openLocal === pl.id ? '收起' : '展开'),
-              h('button', {
-                className: 'x', title: '删除歌单',
-                onClick: async () => {
-                  if (!window.confirm(`删除歌单「${pl.name}」？（不会删除本地文件）`)) return
-                  setErr('')
-                  try {
-                    store.state = await api('/playlist/remove', { method: 'POST', body: JSON.stringify({ id: pl.id }) }); emit()
-                    if (openLocal === pl.id) { setOpenLocal(''); setLocalTracks(null) }
-                  } catch (e) { setErr(String(e.message ?? e)) }
-                },
-              }, '✕')),
-            openLocal === pl.id ? h('div', null,
-              localErr ? h('div', { className: 'dshmp-empty' }, localErr) : null,
-              !localErr && !localTracks ? h('div', { className: 'dshmp-empty' }, '加载中…') : null,
-              pageSlice(localTracks, lpage).map((t, i) => h('div', {
-                key: t.id + i,
-                className: 'dshmp-rowitem',
-                onClick: () => playTrack(localTracks, (lpage - 1) * (store.state.settings.pageSize || 10) + i),
-              },
-                h('span', { className: 't' }, t.title),
-                h('span', { className: 'sub' }, t.artist || ''),
-                t.duration ? h('span', { className: 'dshmp-dur' }, fmtTime(t.duration)) : null,
-                h('button', { className: 'dshmp-mini', title: '编辑信息', onClick: (e) => { e.stopPropagation(); startTrackEdit(t) } }, '编辑'))),
-              h(Pager, { total: (localTracks ?? []).length, page: lpage, onChange: setLPage })) : null))),
+            localErr ? h('div', { className: 'dshmp-empty' }, localErr) : null,
+            !localErr && !localRows ? h('div', { className: 'dshmp-empty' }, '加载中…') : null,
+            !localErr && localRows && localRows.length === 0 ? h('div', { className: 'dshmp-empty' }, '暂无本地歌单（在更多弹窗的播放列表页添加）') : null,
+            localView.length ? h(TrackHead, { sort: lsort, onSort: (k) => setLSort(nextSort(lsort, k)), action: '编辑' }) : null,
+            pageSlice(localView, lpage).map((t, i) => h(SongRow, {
+              key: 'sl' + (t.id ?? '') + '/' + i,
+              t, tag: t._pl, playing: isCurrent(t),
+              onClick: () => playTrack(localView, (lpage - 1) * (store.state.settings.pageSize || 10) + i),
+              actions: h('button', { className: 'dshmp-mini', title: '编辑信息', onClick: (e) => { e.stopPropagation(); startTrackEdit(t) } }, '编辑'),
+            })),
+            h(Pager, { total: localView.length, page: lpage, onChange: setLPage }),
+            locals.length ? h('div', { className: 'dshmp-libline' },
+              h('span', {}, '本地歌单：'),
+              locals.map((pl) => h('span', { key: pl.id, className: 'dshmp-tag' }, `${pl.name} `,
+                h('button', {
+                  className: 'dshmp-xbtn', title: '删除歌单',
+                  onClick: async (e) => {
+                    e.stopPropagation()
+                    if (!window.confirm(`删除歌单「${pl.name}」？（不会删除本地文件）`)) return
+                    setErr('')
+                    try { store.state = await api('/playlist/remove', { method: 'POST', body: JSON.stringify({ id: pl.id }) }); emit() }
+                    catch (e2) { setErr(String(e2.message ?? e2)) }
+                  },
+                }, '✕')))) : null),
           libTab === 'dl' && h('div', null,
-            pageSlice(s.state.downloads ?? [], sdpage).map((d) => h('div', {
-              key: d.id, className: 'dshmp-rowitem',
+            h(TrackHead, { sort: dsort, onSort: (k) => setDSort(nextSort(dsort, k)), action: dlMulti ? '选择' : '操作' }),
+            pageSlice(dlView, sdpage).map((d, i) => h(SongRow, {
+              key: 'sd' + d.id + '/' + i,
+              t: d, tag: d.source ? sourceLabel(d.source) : '', playing: isCurrent(d),
+              sub: `${d.artist || ''}${d.album ? ' · ' + d.album : ''}`,
+              chk: dlMulti ? h('input', { className: 'dshmp-chk', type: 'checkbox', checked: dlSel.has(d.id), readOnly: true }) : null,
               onClick: () => {
                 if (!dlMulti) return
                 setDlSel((prev) => {
@@ -1576,18 +1713,15 @@ window.__ModuleLoader__.load({
                   return n
                 })
               },
-            },
-              dlMulti ? h('input', { className: 'dshmp-chk', type: 'checkbox', checked: dlSel.has(d.id), readOnly: true }) : null,
-              h('span', { className: 't' }, d.source ? h('span', { className: 'dshmp-tag' }, sourceLabel(d.source)) : null, d.title),
-              h('span', { className: 'sub' }, `${d.artist || ''}${d.album ? ' · ' + d.album : ''}`),
-              d.duration ? h('span', { className: 'dshmp-dur' }, fmtTime(d.duration)) : null,
-              dlMulti ? null : h('button', { className: 'dshmp-mini', title: '编辑信息', onClick: (e) => { e.stopPropagation(); startEdit(d) } }, '编辑'),
-              dlMulti ? null : h(PopConfirm, {
-                btnClass: 'dshmp-delbtn', label: h(TrashIcon), title: '删除',
-                hint: `删除「${d.title}」的下载文件？`, onConfirm: () => removeDownload([d.id]),
-              }))),
-            h(Pager, { total: (s.state.downloads ?? []).length, page: sdpage, onChange: setSdPage }),
-            (s.state.downloads ?? []).length === 0 ? h('div', { className: 'dshmp-empty' }, '暂无下载') : null)))
+              actions: dlMulti ? null : h('span', { className: 'dshmp-act2' },
+                h('button', { className: 'dshmp-mini', title: '编辑信息', onClick: (e) => { e.stopPropagation(); startEdit(d) } }, '编辑'),
+                h(PopConfirm, {
+                  btnClass: 'dshmp-delbtn', label: h(TrashIcon), title: '删除',
+                  hint: `删除「${d.title}」的下载文件？`, onConfirm: () => removeDownload([d.id]),
+                })),
+            })),
+            h(Pager, { total: dlView.length, page: sdpage, onChange: setSdPage }),
+            dlView.length === 0 ? h('div', { className: 'dshmp-empty' }, '暂无下载') : null)))
       return h('div', { className: 'dshmp-setwrap' }, inner, saveBar)
     }
 
@@ -1665,7 +1799,7 @@ window.__ModuleLoader__.load({
         ctx.slots.inject('settings.section.icon', () =>
           ctx.slots.register({ name: 'settings.section.icon', id: 'dsh-music-player' }, SettingsSectionIcon))
       },
-      __pure: { parseLrc, fmtTime, pickNextIndex, nextMode, decodeBytes, dlRing, PAGE_SIZE, safePage, comboOf },
+      __pure: { parseLrc, fmtTime, pickNextIndex, nextMode, decodeBytes, dlRing, PAGE_SIZE, safePage, comboOf, sortRows, nextSort },
     }
     return plugin
   },
