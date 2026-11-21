@@ -73,6 +73,8 @@ window.__ModuleLoader__.load({
       '.dshmp-th:hover{color:var(--dsw-alias-label-primary)}',
       '.dshmp-th.t{flex:1;overflow:hidden;text-overflow:ellipsis}',
       '.dshmp-th.s{width:96px}',
+      '.dshmp-th.r{width:52px}',
+      '.dshmp-src{flex:none;width:52px;font-size:11px;color:var(--dsw-alias-label-tertiary,#999);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}',
       '.dshmp-th.d{width:40px;text-align:right}',
       '.dshmp-th.act{width:64px;text-align:right}',
       '.dshmp-act{flex:none;width:64px;display:flex;align-items:center;justify-content:flex-end;gap:2px;overflow:hidden}',
@@ -673,10 +675,13 @@ window.__ModuleLoader__.load({
     }
 
     // 列头排序：key=title|artist|duration，dir=1 升序 / -1 降序
+    // 来源列取值：下载记录用 origin（下载时的渠道），其余用 source
+    function rowSource(t) { return sourceLabel(t?.origin || t?.source || 'local') }
+
     function sortRows(rows, sort) {
       if (!sort || !sort.key) return rows
       const dir = sort.dir < 0 ? -1 : 1
-      const val = (r) => (sort.key === 'duration' ? Number(r?.duration) || 0 : String(r?.[sort.key] ?? ''))
+      const val = (r) => (sort.key === 'duration' ? Number(r?.duration) || 0 : sort.key === 'source' ? rowSource(r) : String(r?.[sort.key] ?? ''))
       return rows
         .map((r, i) => [r, i])
         .sort((a, b) => {
@@ -697,16 +702,17 @@ window.__ModuleLoader__.load({
       return h('div', { className: 'dshmp-thead' },
         h('button', { className: 'dshmp-th t', onClick: () => onSort('title') }, '歌名' + mark('title')),
         h('button', { className: 'dshmp-th s', onClick: () => onSort('artist') }, '歌手' + mark('artist')),
+        h('button', { className: 'dshmp-th r', onClick: () => onSort('source') }, '来源' + mark('source')),
         h('button', { className: 'dshmp-th d', onClick: () => onSort('duration') }, '时长' + mark('duration')),
         h('span', { className: 'dshmp-th act' }, action || ''))
     }
-    // 所有歌曲列表共用同一行结构：可选勾选框 + 标签 + 歌名 / 歌手 / 时长 / 操作
-    function SongRow({ t, playing, tag, sub, chk, actions, onClick }) {
+    // 所有歌曲列表共用同一行结构：可选勾选框 + 歌名 / 歌手 / 来源 / 时长 / 操作
+    function SongRow({ t, playing, src, sub, chk, actions, onClick }) {
       return h('div', { className: 'dshmp-rowitem' + (playing ? ' playing' : ''), onClick },
         chk ?? null,
-        h('span', { className: 't' }, t.vip ? h('span', { className: 'dshmp-vip' }, 'VIP') : null,
-          tag ? h('span', { className: 'dshmp-tag' }, tag) : null, t.title),
+        h('span', { className: 't' }, t.vip ? h('span', { className: 'dshmp-vip' }, 'VIP') : null, t.title),
         h('span', { className: 'sub' }, sub ?? (t.artist || '')),
+        h('span', { className: 'dshmp-src' }, src ?? rowSource(t)),
         h('span', { className: 'dshmp-dur' }, t.duration ? fmtTime(t.duration) : ''),
         h('span', { className: 'dshmp-act' }, actions ?? null))
     }
@@ -857,6 +863,7 @@ window.__ModuleLoader__.load({
         return items
       }, [s.state.playlists])
       const [lsort, setLSort] = useState({ key: '', dir: 1 })
+      const [psort, setPSort] = useState({ key: '', dir: 1 })
       const flatView = useMemo(() => sortRows(flat, lsort), [flat, lsort])
       const platformPls = s.state.playlists.filter((p) => p.kind === 'platform')
       useEffect(() => { setTPage(1) }, [s.state.playlists])
@@ -932,21 +939,19 @@ window.__ModuleLoader__.load({
           }, '✕')),
         openId === pl.id && (() => {
           const ps = store.state.settings.pageSize || 10
+          const pview = sortRows(tracks, psort)
           return h('div', null,
             err ? h('div', { className: 'dshmp-empty' }, err) : null,
             !err && tracks.length === 0 ? h('div', { className: 'dshmp-empty' }, '加载中…') : null,
-            pageSlice(tracks, tpage).map((t, i) => {
+            tracks.length ? h(TrackHead, { sort: psort, onSort: (k) => setPSort(nextSort(psort, k)) }) : null,
+            pageSlice(pview, tpage).map((t, i) => {
               const gi = (tpage - 1) * ps + i
-              return h('div', {
-                key: t.id + gi,
-                className: 'dshmp-rowitem' + (s.current && s.current.list === tracks && s.current.index === gi ? ' playing' : ''),
-                onClick: () => playTrack(tracks, gi),
-              },
-                h('span', { className: 't' }, t.vip ? h('span', { className: 'dshmp-vip' }, 'VIP') : null, t.title),
-                h('span', { className: 'sub' }, t.artist || t.source),
-                t.duration ? h('span', { className: 'dshmp-dur' }, fmtTime(t.duration)) : null)
+              return h(SongRow, {
+                key: (t.id ?? '') + '/' + gi, t, playing: isCurrent(t),
+                onClick: () => playTrack(pview, gi),
+              })
             }),
-            h(Pager, { total: tracks.length, page: tpage, onChange: setTPage }))
+            h(Pager, { total: pview.length, page: tpage, onChange: setTPage }))
         })(),
       )
       const subTabs = h('div', { className: 'dshmp-subtabs' },
@@ -1034,7 +1039,7 @@ window.__ModuleLoader__.load({
             const gi = (dpage - 1) * ps + i
             return h(SongRow, {
               key: 'dl' + (t.id ?? '') + '/' + gi,
-              t, tag: t.origin ? sourceLabel(t.origin) : '', playing: isCurrent(t),
+              t, playing: isCurrent(t),
               chk: multi ? h('input', { className: 'dshmp-chk', type: 'checkbox', checked: sel.has(t.id), readOnly: true }) : null,
               onClick: () => (multi ? toggle(t.id) : playTrack(view, gi)),
               actions: multi ? null : h(PopConfirm, {
@@ -1115,7 +1120,7 @@ window.__ModuleLoader__.load({
         h('div', { className: 'dshmp-tab-scroll' },
           rowsView.map((t, i) => h(SongRow, {
             key: 's' + t.id + '/' + i, t, playing: isCurrent(t),
-            sub: `${t.artist || ''} · ${sourceLabel(t.source)}`,
+            sub: t.artist || '',
             onClick: () => ((t.source === 'pan' || t.source === 'wusunk') ? panClick(t) : playTrack(rowsView, i)),
             actions: t.source !== 'pan' && t.source !== 'wusunk' ? h(DlBtn, { t, onMsg: setDlMsg }) : null,
           })),
@@ -1140,7 +1145,7 @@ window.__ModuleLoader__.load({
     }
 
     function sourceLabel(source) {
-      return { netease: '网易云', bilibili: 'B站', kuwo: '酷我', kugou: '酷狗', qq: 'QQ音乐', soda: '汽水', pan: '免费源', '5sing': '5sing', wusunk: '无损控', local: '本地', custom: '网络' }[source] ?? source
+      return { netease: '网易云', bilibili: 'B站', kuwo: '酷我', kugou: '酷狗', qq: 'QQ音乐', qishui: '汽水', soda: '汽水', pan: '免费源', '5sing': '5sing', wusunk: '无损控', local: '本地', custom: '网络' }[source] ?? source
     }
 
     // 平台官方 favicon（经服务端 stream 代理加载，失败回退字母徽标）
@@ -1702,7 +1707,7 @@ window.__ModuleLoader__.load({
             h(TrackHead, { sort: dsort, onSort: (k) => setDSort(nextSort(dsort, k)), action: dlMulti ? '选择' : '操作' }),
             pageSlice(dlView, sdpage).map((d, i) => h(SongRow, {
               key: 'sd' + d.id + '/' + i,
-              t: d, tag: d.source ? sourceLabel(d.source) : '', playing: isCurrent(d),
+              t: d, playing: isCurrent(d),
               sub: `${d.artist || ''}${d.album ? ' · ' + d.album : ''}`,
               chk: dlMulti ? h('input', { className: 'dshmp-chk', type: 'checkbox', checked: dlSel.has(d.id), readOnly: true }) : null,
               onClick: () => {

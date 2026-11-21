@@ -450,6 +450,25 @@ test('sortRows sorts by title/artist/duration and nextSort cycles asc/desc/off',
   assert.deepEqual(nextSort({ key: 'title', dir: -1 }, 'title'), { key: '', dir: 1 })
 })
 
+test('sortRows 来源列按展示的渠道标签排序，同渠道相邻', async () => {
+  const { sortRows } = (await loadClient()).plugin.__pure
+  const rows = [
+    { title: 'A', origin: 'kuwo' },
+    { title: 'B', origin: '5sing' },
+    { title: 'C', source: 'netease' },
+    { title: 'D', origin: 'kuwo' },
+    { title: 'E', source: 'local' },
+  ]
+  const up = sortRows(rows, { key: 'source', dir: 1 }).map((r) => r.title)
+  assert.equal(up.length, 5)
+  // 本地（ben）在酷我（ku）之前；两条酷我相邻
+  assert.ok(up.indexOf('E') < up.indexOf('A'), `本地应在酷我前: ${up}`)
+  assert.equal(Math.abs(up.indexOf('A') - up.indexOf('D')), 1, `同渠道应相邻: ${up}`)
+  const down = sortRows(rows, { key: 'source', dir: -1 }).map((r) => r.title)
+  assert.ok(down.indexOf('C') < down.indexOf('E'), `降序时网易云应在本地前: ${down}`)
+  assert.equal(Math.abs(down.indexOf('A') - down.indexOf('D')), 1, `降序同渠道也应相邻: ${down}`)
+})
+
 test('parseTrackName splits 曲目号 歌手 - 歌名 from a filename', async () => {
   const { parseTrackName } = await import('../index.js')
   assert.deepEqual(parseTrackName('0063程响-世界这么大还是遇见你'), { title: '世界这么大还是遇见你', artist: '程响' })
