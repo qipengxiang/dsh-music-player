@@ -546,3 +546,29 @@ test('sanitizeState/publicState keep user-source meta but strip script bodies', 
   assert.equal('script' in p.musicSources[0], false)
   assert.equal(p.musicSources[0].name, 'n')
 })
+
+const LX_TEST_SCRIPT_2 = `/**
+ * @name 第二个源
+ */
+const { EVENT_NAMES, on, send } = globalThis.lx
+on(EVENT_NAMES.request, ({ source, action }) => {
+  if (action === 'musicUrl' && source === 'kw') return Promise.resolve('http://second.example.com/play.flac')
+  return Promise.reject(new Error('nope'))
+})
+send(EVENT_NAMES.inited, { sources: { kw: { type: 'music', actions: ['musicUrl'], qualitys: ['128k'] } } })`
+
+test('multiple user sources: first script misses, second one wins', async () => {
+  const us = await import('../server/usersources.js')
+  const state = {
+    musicSources: [
+      // 只覆盖 kg（不覆盖 kw），应被跳过
+      { id: 'm1', script: LX_TEST_SCRIPT_2.replace(/'kw'/g, "'kg'"), enabled: true },
+      // 覆盖 kw 但 handler reject → 跳过继续
+      { id: 'm2', script: LX_TEST_SCRIPT_2.replace("Promise.resolve('http://second.example.com/play.flac')", 'Promise.reject(new Error("dead"))'), enabled: true },
+      // 正常覆盖 kw
+      { id: 'm3', script: LX_TEST_SCRIPT_2, enabled: true },
+    ],
+  }
+  const url = await us.resolveScripted(state, 'kuwo', { songmid: 'M1', name: 'x' })
+  assert.equal(url, 'http://second.example.com/play.flac')
+})

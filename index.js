@@ -472,6 +472,27 @@ export function apply(ctx) {
           return sendJSON(res, 200, publicState(next))
         }
 
+        if (action === 'music-source/script' && req.method === 'GET') {
+          const entry = (state.musicSources ?? []).find((m) => m.id === url.searchParams.get('id'))
+          if (!entry) return sendJSON(res, 404, { error: '音源不存在' })
+          return sendJSON(res, 200, { script: entry.script })
+        }
+
+        if (action === 'music-source/update' && req.method === 'POST') {
+          const body = await readJSON(req)
+          const script = String(body.script ?? '').trim()
+          const old = (state.musicSources ?? []).find((m) => m.id === body.id)
+          if (!old) throw new Error('音源不存在')
+          if (!script) throw new Error('脚本报文为空')
+          const entry = { ...old, ...usersources.parseScriptHeader(script), script, platforms: [], error: '' }
+          const probe = await usersources.describeAll({ musicSources: [entry] })
+          entry.platforms = probe[0].platforms
+          entry.error = probe[0].error
+          const next = sanitizeState({ ...state, musicSources: state.musicSources.map((m) => (m.id === old.id ? entry : m)) })
+          await writeState(next)
+          return sendJSON(res, 200, publicState(next))
+        }
+
         if (action === 'music-source/toggle' && req.method === 'POST') {
           const body = await readJSON(req)
           const next = sanitizeState({

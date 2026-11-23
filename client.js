@@ -1498,9 +1498,16 @@ window.__ModuleLoader__.load({
       const [psz, setPsz] = useState('10')
       const [accentTmp, setAccentTmp] = useState('')
       const [srcTmp, setSrcTmp] = useState('bilibili')
-      const [srcAdding, setSrcAdding] = useState(false)
+      const [srcEditId, setSrcEditId] = useState(null) // null=收起, 'new'=新增, 其他=编辑该 id
       const [srcText, setSrcText] = useState('')
       const [srcBusy, setSrcBusy] = useState(false)
+      const openSrc = async (id) => {
+        setSrcEditId(id)
+        setSrcText(id === 'new' ? '' : '加载中…')
+        if (id === 'new') return
+        try { const j = await api(`/music-source/script?id=${encodeURIComponent(id)}`); setSrcText(j.script ?? '') }
+        catch (e) { setSrcText(''); showToast(String(e.message ?? e)) }
+      }
       useEffect(() => {
         setPsz(String(store.state.settings.pageSize ?? 10))
         setAccentTmp(store.state.settings.accent ?? '')
@@ -1713,9 +1720,9 @@ window.__ModuleLoader__.load({
         h('div', { className: 'dshmp-set-block' },
           h('div', { className: 'dshmp-set-field' },
             h('span', {}, '自定义音源'),
-            h('button', { className: 'dshmp-mini', onClick: () => setSrcAdding(!srcAdding) }, srcAdding ? '收起' : '添加'),
+            h('button', { className: 'dshmp-mini', onClick: () => (srcEditId == null ? openSrc('new') : setSrcEditId(null)) }, srcEditId == null ? '添加' : '收起'),
             h('span', { className: 'dshmp-pgnum' }, 'LX 自定义源脚本')),
-          srcAdding ? h('div', { style: { display: 'flex', flexDirection: 'column', gap: 6 } },
+          srcEditId != null ? h('div', { style: { display: 'flex', flexDirection: 'column', gap: 6 } },
             h('textarea', {
               className: 'dshmp-input', style: { height: 88, resize: 'vertical', fontFamily: 'monospace', fontSize: 11 },
               placeholder: '粘贴 lx-music 自定义源脚本（/** @name … */ 开头）',
@@ -1726,13 +1733,15 @@ window.__ModuleLoader__.load({
               onClick: async () => {
                 setSrcBusy(true)
                 try {
-                  store.state = await api('/music-source/add', { method: 'POST', body: JSON.stringify({ script: srcText }) })
-                  setSrcText(''); setSrcAdding(false); emit()
-                  showToast('自定义源已添加')
+                  const path = srcEditId === 'new' ? '/music-source/add' : '/music-source/update'
+                  const body = srcEditId === 'new' ? { script: srcText } : { id: srcEditId, script: srcText }
+                  store.state = await api(path, { method: 'POST', body: JSON.stringify(body) })
+                  setSrcText(''); setSrcEditId(null); emit()
+                  showToast(srcEditId === 'new' ? '自定义源已添加' : '自定义源已更新')
                 } catch (e) { showToast(String(e.message ?? e)) }
                 setSrcBusy(false)
               },
-            }, srcBusy ? '添加中…' : '添加'))) : null,
+            }, srcBusy ? '保存中…' : '保存'))) : null,
           ...(s.state.musicSources ?? []).map((m) => h('div', { className: 'dshmp-set-field' },
             h('input', {
               type: 'checkbox', checked: m.enabled !== false, title: m.enabled !== false ? '已启用' : '已停用',
@@ -1745,6 +1754,7 @@ window.__ModuleLoader__.load({
               `${m.name}${m.version ? ` v${m.version}` : ''}${m.author ? ` · ${m.author}` : ''}`,
               m.platforms?.length ? `（覆盖：${m.platforms.map((p) => ({ kuwo: '酷我', kugou: '酷狗', qq: 'QQ', netease: '网易云' }[p] ?? p)).join('、')}）` : ''),
             m.error ? h('span', { className: 'dshmp-dur', title: m.error }, '加载失败') : null,
+            h('button', { className: 'dshmp-mini', title: '编辑脚本', onClick: () => openSrc(m.id) }, '编辑'),
             h('button', {
               className: 'dshmp-mini', title: '删除', onClick: async () => {
                 try { store.state = await api('/music-source/remove', { method: 'POST', body: JSON.stringify({ id: m.id }) }); emit() }

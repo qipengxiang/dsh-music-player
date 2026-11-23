@@ -129,7 +129,7 @@ export async function resolveScripted(state, source, musicInfo) {
     const url = await Promise.race([
       runtime.handler({ source: lxKey, action: 'musicUrl', info: { type, musicInfo } }),
       new Promise((resolve) => setTimeout(() => resolve(null), 15000)),
-    ])
+    ]).catch(() => null)
     if (typeof url === 'string' && /^https?:\/\//.test(url)) return url
   }
   return null
