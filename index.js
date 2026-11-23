@@ -305,21 +305,31 @@ const qishuiHelpers = {
   },
 }
 
+/** custom:<id> sources delegate to the first builtin platform their script covers (netease preferred). */
+export function customUnderlying(state, source) {
+  if (typeof source !== 'string' || !source.startsWith('custom:')) return { src: source, preferId: '' }
+  const entry = (state.musicSources ?? []).find((m) => m.id === source.slice(7) && m.enabled !== false)
+  const under = ['netease', 'kuwo', 'kugou', 'qq'].find((p) => entry?.platforms?.includes(p))
+  return under ? { src: under, preferId: entry.id } : { src: '', preferId: '' }
+}
+
 /** Raw remote stream result per source ({url, preview?}) — shared by play + download flows.
  * Enabled LX-style user scripts take precedence for kuwo/kugou/qq/netease; builtin is the fallback. */
 async function remoteSongUrl(state, source, id, info = {}) {
-  const musicInfo = { songmid: id, id, name: info.title ?? '', singer: info.artist ?? '', source }
-  const scripted = await usersources.resolveScripted(state, source, musicInfo).catch(() => null)
+  const { src, preferId } = customUnderlying(state, source)
+  if (!src) throw new Error('该音源不存在、未启用或未覆盖任何平台')
+  const musicInfo = { songmid: id, id, name: info.title ?? '', singer: info.artist ?? '', source: src }
+  const scripted = await usersources.resolveScripted(state, src, musicInfo, preferId).catch(() => null)
   if (scripted) return { url: scripted }
   const out =
-    source === 'netease' ? await netease.songUrl(id, cookieOf(state, 'netease'))
-    : source === 'bilibili' ? await bilibili.songUrl(id, cookieOf(state, 'bilibili'))
-    : source === 'kuwo' ? await kuwo.songUrl(id)
-    : source === 'kugou' ? await kugou.songUrl(id, cookieOf(state, 'kugou'))
-    : source === 'qq' ? await qq.songUrl(id, cookieOf(state, 'qq'))
-    : source === 'pan' ? await pan.songUrl(id)
-    : source === '5sing' ? await fivesing.songUrl(id)
-    : source === 'qishui' ? (await qishui.ensure(state, qishuiHelpers), await qishui.songUrl(id))
+    src === 'netease' ? await netease.songUrl(id, cookieOf(state, 'netease'))
+    : src === 'bilibili' ? await bilibili.songUrl(id, cookieOf(state, 'bilibili'))
+    : src === 'kuwo' ? await kuwo.songUrl(id)
+    : src === 'kugou' ? await kugou.songUrl(id, cookieOf(state, 'kugou'))
+    : src === 'qq' ? await qq.songUrl(id, cookieOf(state, 'qq'))
+    : src === 'pan' ? await pan.songUrl(id)
+    : src === '5sing' ? await fivesing.songUrl(id)
+    : src === 'qishui' ? (await qishui.ensure(state, qishuiHelpers), await qishui.songUrl(id))
     : { url: '' }
   if (out.error) throw new Error(out.error)
   if (!out.url) throw new Error('没有拿到播放地址')
@@ -327,8 +337,10 @@ async function remoteSongUrl(state, source, id, info = {}) {
 }
 
 async function lyricOf(state, source, id) {
-  if (source === 'netease') return (await netease.lyric(id)).lrc ?? ''
-  if (source === 'qq') return (await qq.lyric(id)).lrc ?? ''
+  const { src } = customUnderlying(state, source)
+  if (!src) return ''
+  if (src === 'netease') return (await netease.lyric(id)).lrc ?? ''
+  if (src === 'qq') return (await qq.lyric(id)).lrc ?? ''
   if (source === 'pan') return (await pan.lyric(id)).lrc ?? ''
   if (source === '5sing') return (await fivesing.lyric(id)).lrc ?? ''
   if (source === 'qishui') { await qishui.ensure(state, qishuiHelpers); return (await qishui.lyric(id)).lrc ?? '' }
@@ -622,6 +634,17 @@ export function apply(ctx) {
           const source = url.searchParams.get('source') ?? 'netease'
           const page = Math.max(1, Number(url.searchParams.get('page')) || 1)
           if (!q.trim()) return sendJSON(res, 200, { tracks: [] })
+          if (source.startsWith('custom:')) {
+            // custom sources ride a covered builtin platform's search; playback routes back through the script
+            const { src } = customUnderlying(state, source)
+            if (!src) return sendJSON(res, 400, { error: '该音源不存在、未启用或未覆盖任何平台' })
+            const under = src === 'netease' ? await netease.search(q, page)
+              : src === 'kuwo' ? await kuwo.search(q, page)
+              : src === 'kugou' ? await kugou.search(q, page)
+              : await qq.search(q, page)
+            under.tracks = (under.tracks ?? []).map((t) => ({ ...t, source }))
+            return sendJSON(res, 200, under)
+          }
           if (source === 'netease') return sendJSON(res, 200, await netease.search(q, page))
           if (source === 'bilibili') return sendJSON(res, 200, await bilibili.search(q, page))
           if (source === 'kuwo') return sendJSON(res, 200, await kuwo.search(q, page))

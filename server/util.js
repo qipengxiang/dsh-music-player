@@ -235,7 +235,10 @@ export function sanitizeState(raw) {
         ? s.settings.downloadDir.slice(0, 2000)
         : '',
       pageSize: Number.isFinite(Number(s.settings?.pageSize)) ? Math.min(100, Math.max(5, Math.round(Number(s.settings.pageSize)))) : 10,
-      defaultSource: ['netease','bilibili','kuwo','kugou','qq','qishui','pan','5sing','wusunk'].includes(s.settings?.defaultSource) ? s.settings.defaultSource : 'bilibili',
+      // defaultSource: builtin whitelist, or custom:<id> matching an existing user source
+      defaultSource: ['netease','bilibili','kuwo','kugou','qq','qishui','pan','5sing','wusunk'].includes(s.settings?.defaultSource)
+        || (typeof s.settings?.defaultSource === 'string' && s.settings.defaultSource.startsWith('custom:') && (s.musicSources ?? []).some((m) => m.id === s.settings.defaultSource.slice(7)))
+        ? s.settings.defaultSource : 'bilibili',
       accent: typeof s.settings?.accent === 'string' && /^#[0-9a-fA-F]{6}$/.test(s.settings.accent) ? s.settings.accent : '',
       hotkeys: {
         prev: typeof s.settings?.hotkeys?.prev === 'string' ? s.settings.hotkeys.prev.slice(0, 40) : '',

@@ -161,13 +161,15 @@ async function sync(state) {
   for (const r of old) r.runtime?.dispose?.()
 }
 
-/** First matching script URL for our source id, or null so the caller falls back to builtin. */
-export async function resolveScripted(state, source, musicInfo) {
+/** First matching script URL for our source id, or null so the caller falls back to builtin.
+ * preferId: when the user picked a specific custom source (custom:<id>), only that script runs. */
+export async function resolveScripted(state, source, musicInfo, preferId = '') {
   const lxKey = SOURCE_TO_LX_KEY[source]
   if (!lxKey) return null
   await sync(state)
   {
-    for (const { runtime } of loaded.values()) {
+    for (const [id, { runtime }] of loaded) {
+      if (preferId && id !== preferId) continue
       const def = runtime.sources?.[lxKey]
       if (!Array.isArray(def?.actions) || !def.actions.includes('musicUrl') || typeof runtime.handler !== 'function') continue
       const qualitys = Array.isArray(def.qualitys) ? def.qualitys.filter((q) => typeof q === 'string') : []

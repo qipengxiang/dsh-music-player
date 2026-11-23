@@ -591,3 +591,32 @@ test('kill-switched script cannot crash the host process', async () => {
   assert.equal(status, 0, `subprocess exited ${status} — sandbox rejection escaped the guard`)
   assert.match(out, /SURVIVED/)
 })
+
+test('defaultSource accepts custom:<id> of an existing user source, rejects dangling ids', async () => {
+  const { sanitizeState } = await import('../server/util.js')
+  const base = { musicSources: [{ id: 'srcX', name: 'x', script: '// s', enabled: true, platforms: ['kuwo'] }] }
+  assert.equal(sanitizeState({ ...base, settings: { defaultSource: 'custom:srcX' } }).settings.defaultSource, 'custom:srcX')
+  assert.equal(sanitizeState({ ...base, settings: { defaultSource: 'custom:gone' } }).settings.defaultSource, 'bilibili')
+})
+
+test('resolveScripted preferId pins one script; unknown id falls through to the chain', async () => {
+  const us = await import('../server/usersources.js')
+  const mk = (name, url) => `/** @name ${name} */\nconst { EVENT_NAMES, on, send } = globalThis.lx\non(EVENT_NAMES.request, ({ source, action }) => action === 'musicUrl' && source === 'kw' ? Promise.resolve('${url}') : Promise.reject(new Error('x')))\nsend(EVENT_NAMES.inited, { sources: { kw: { type: 'music', actions: ['musicUrl'], qualitys: ['128k'] } } })`
+  const state = { musicSources: [
+    { id: 'a', script: mk('a', 'http://a.example.com/1.mp3'), enabled: true },
+    { id: 'b', script: mk('b', 'http://b.example.com/2.mp3'), enabled: true },
+  ] }
+  assert.equal(await us.resolveScripted(state, 'kuwo', { songmid: 'M' }, 'b'), 'http://b.example.com/2.mp3')
+  assert.equal(await us.resolveScripted(state, 'kuwo', { songmid: 'M' }, 'a'), 'http://a.example.com/1.mp3')
+  assert.equal(await us.resolveScripted(state, 'kuwo', { songmid: 'M' }, 'nope'), null) // pin: unknown id serves nothing; customUnderlying guards before this
+})
+
+test('customUnderlying maps custom ids to a covered builtin platform (netease preferred)', async () => {
+  const { customUnderlying } = await import('../index.js')
+  const state = { musicSources: [{ id: 'gd', enabled: true, platforms: ['kuwo', 'netease'] }] }
+  assert.deepEqual(customUnderlying(state, 'custom:gd'), { src: 'netease', preferId: 'gd' })
+  assert.deepEqual(customUnderlying(state, 'netease'), { src: 'netease', preferId: '' })
+  assert.deepEqual(customUnderlying(state, 'custom:gone'), { src: '', preferId: '' })
+  assert.deepEqual(customUnderlying({ musicSources: [{ id: 'x', enabled: false, platforms: ['netease'] }] }, 'custom:x'), { src: '', preferId: '' })
+  assert.deepEqual(customUnderlying({ musicSources: [{ id: 'k', enabled: true, platforms: ['kugou'] }] }, 'custom:k'), { src: 'kugou', preferId: 'k' })
+})

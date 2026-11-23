@@ -1090,6 +1090,9 @@ window.__ModuleLoader__.load({
         setBusy(true); setErr(''); setRows([]); setPls([]); setMore(null)
         try {
           if (kind === 'song') {
+            if (source.startsWith('custom:') && !(store.state.musicSources ?? []).some((m) => m.id === source.slice(7) && m.enabled !== false)) {
+              setBusy(false); setErr('该音源已停用或移除，请重新选择'); return
+            }
             const j = await api(`/search?source=${source}&q=${encodeURIComponent(q)}&page=${targetPage}`)
             setRows(j.tracks ?? [])
             setMore(typeof j.hasMore === 'boolean' ? j.hasMore : null)
@@ -1128,7 +1131,8 @@ window.__ModuleLoader__.load({
             h('option', { value: 'qishui' }, '汽水'),
             h('option', { value: 'pan' }, '免费源'),
             h('option', { value: '5sing' }, '5sing'),
-            h('option', { value: 'wusunk' }, '无损控')) : h('select', { className: 'dshmp-input', style: { flex: 'none', width: 96 }, value: plSource, onChange: (e) => setPlSource(e.target.value) },
+            h('option', { value: 'wusunk' }, '无损控'),
+            ...(store.state.musicSources ?? []).filter((m) => m.enabled !== false).map((m) => h('option', { key: m.id, value: `custom:${m.id}` }, `${m.name}·自定义`))) : h('select', { className: 'dshmp-input', style: { flex: 'none', width: 96 }, value: plSource, onChange: (e) => setPlSource(e.target.value) },
             h('option', { value: 'netease' }, '网易云'),
             h('option', { value: 'qq' }, 'QQ音乐'),
             h('option', { value: 'qishui' }, '汽水')),
@@ -1171,6 +1175,10 @@ window.__ModuleLoader__.load({
     }
 
     function sourceLabel(source) {
+      if (typeof source === 'string' && source.startsWith('custom:')) {
+        const m = (store.state?.musicSources ?? []).find((x) => x.id === source.slice(7))
+        if (m) return m.name
+      }
       return { netease: '网易云', bilibili: 'B站', kuwo: '酷我', kugou: '酷狗', qq: 'QQ音乐', qishui: '汽水', soda: '汽水', pan: '免费源', '5sing': '5sing', wusunk: '无损控', local: '本地', custom: '网络' }[source] ?? source
     }
 
@@ -1715,7 +1723,8 @@ window.__ModuleLoader__.load({
               h('option', { value: 'qishui' }, '汽水'),
               h('option', { value: 'pan' }, '免费源'),
               h('option', { value: '5sing' }, '5sing'),
-              h('option', { value: 'wusunk' }, '无损控')),
+              h('option', { value: 'wusunk' }, '无损控'),
+              ...(store.state.musicSources ?? []).filter((m) => m.enabled !== false).map((m) => h('option', { key: m.id, value: `custom:${m.id}` }, `${m.name}（自定义）`))),
             h('span', { className: 'dshmp-pgnum' }, '搜索页的初始渠道'))),
         h('div', { className: 'dshmp-set-block' },
           h('div', { className: 'dshmp-set-field' },
