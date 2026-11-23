@@ -50,7 +50,13 @@ function lxUtils() {
 /** lx.request: callback-style CORS-free HTTP; returns a cancel fn. shortcut: no formData/binary body support. */
 function lxRequest(url, options, callback) {
   const ctrl = new AbortController()
-  const cb = typeof callback === 'function' ? callback : () => {}
+  // script callbacks may throw sync OR return rejected promises; both must stay contained
+  const cb = (err, resp, body) => {
+    if (typeof callback !== 'function') return
+    try { Promise.resolve(callback(err, resp, body)).catch(() => {}) } catch {}
+  }
+  // stamp delivered errors so a script letting them escape unhandled stays identifiable
+  const tag = (err) => { try { if (err && typeof err === 'object') Object.defineProperty(err, '$dshmpScript', { value: true }) } catch {} return err }
   const opts = options && typeof options === 'object' ? options : {}
   const headers = { ...(opts.headers ?? {}) }
   let { body } = opts
@@ -58,7 +64,7 @@ function lxRequest(url, options, callback) {
     headers['content-type'] ??= 'application/x-www-form-urlencoded'
     body = new URLSearchParams(opts.form).toString()
   }
-  const timer = setTimeout(() => ctrl.abort(), Math.min(Number(opts.timeout) || 15000, 30000))
+  const timer = setTimeout(() => { try { ctrl.abort() } catch {} }, Math.min(Number(opts.timeout) || 15000, 30000))
   fetch(String(url), {
     method: String(opts.method || 'GET').toUpperCase(),
     headers,
@@ -67,8 +73,43 @@ function lxRequest(url, options, callback) {
   }).then(async (resp) => {
     const text = Buffer.from(await resp.arrayBuffer()).toString('utf-8')
     cb(null, { statusCode: resp.status, headers: Object.fromEntries(resp.headers), body: text }, text)
-  }).catch((err) => cb(err, null, null)).finally(() => clearTimeout(timer))
-  return () => ctrl.abort()
+  }).catch((err) => {
+    cb(tag(err), null, null)
+  }).finally(() => clearTimeout(timer))
+  return () => { try { ctrl.abort() } catch {} }
+}
+
+/**
+ * Scripts share our event loop; a kill-switched or buggy third-party script throws from a
+ * microtask the vm cannot contain, and an unhandled rejection crashes modern Node. The guard
+ * is installed permanently at module load: promise rejections only reach the fatal
+ * triggerUncaughtException path when NO unhandledRejection listener exists, so a permanent
+ * listener routes everything through us. We swallow rejections that originate from user
+ * scripts — identified by `usersource:` frames (also inside AggregateError.errors[]) or by
+ * the tag we stamp on errors delivered through lx.request — and rethrow anything else,
+ * preserving default semantics for host code.
+ */
+function onStrayRejection(err) {
+  if (err?.$dshmpScript) return
+  const s = String(err?.stack ?? err) + (Array.isArray(err?.errors) ? err.errors.map((e) => `${e?.stack ?? e}${e?.$dshmpScript ? ' $dshmpScript' : ''}`).join('\n') : '')
+  if (s.includes('usersource:')) return
+  throw err
+}
+process.on('unhandledRejection', onStrayRejection)
+
+/** Sandbox timers: wrapped so callback throws stay contained, tracked so replaced runtimes don't leak. */
+function makeTimers() {
+  const handles = new Set()
+  return {
+    setTimeout: (fn, ms, ...args) => {
+      if (typeof fn !== 'function') return 0
+      const t = setTimeout(() => { handles.delete(t); try { fn(...args)?.catch?.(() => {}) } catch {} }, Number(ms) || 0)
+      handles.add(t)
+      return t
+    },
+    clearTimeout: (t) => { clearTimeout(t); handles.delete(t) },
+    dispose: () => { for (const t of handles) clearTimeout(t); handles.clear() },
+  }
 }
 
 /** Run one script in a sandbox; resolves {sources} from the inited handshake or {error}. */
@@ -76,6 +117,7 @@ async function bootScript(entry) {
   const meta = parseScriptHeader(entry.script)
   let resolveInited
   const inited = new Promise((r) => { resolveInited = r })
+  const timers = makeTimers()
   const lx = {
     version: '1.0.0',
     env: 'desktop',
@@ -88,7 +130,7 @@ async function bootScript(entry) {
   }
   const timeout = setTimeout(() => resolveInited(null), 5000)
   try {
-    const ctx = createContext({ console, setTimeout, clearTimeout, lx })
+    const ctx = createContext({ console, setTimeout: timers.setTimeout, clearTimeout: timers.clearTimeout, lx })
     runInContext(entry.script, ctx, { timeout: 5000, filename: `usersource:${entry.id}` })
     const info = await inited
     if (!info || typeof info !== 'object') throw new Error('脚本未在 5 秒内完成 inited 握手')
@@ -96,9 +138,10 @@ async function bootScript(entry) {
     const platforms = Object.entries(LX_KEY_TO_SOURCE)
       .filter(([k]) => Array.isArray(sources[k]?.actions) && sources[k].actions.includes('musicUrl'))
       .map(([, v]) => v)
-    return { meta, platforms, sources, handler: (...a) => lx.$handler(...a) }
+    return { meta, platforms, sources, handler: (...a) => lx.$handler(...a), dispose: timers.dispose }
   } catch (err) {
-    return { meta, platforms: [], sources: {}, handler: null, error: String(err?.message ?? err).slice(0, 300) }
+    timers.dispose()
+    return { meta, platforms: [], sources: {}, handler: null, dispose: null, error: String(err?.message ?? err).slice(0, 300) }
   } finally {
     clearTimeout(timeout)
   }
@@ -112,8 +155,10 @@ async function sync(state) {
   const fp = entries.map((e) => `${e.id}:${e.script.length}`).join('|')
   const current = [...loaded.values()].map((r) => r.fingerprint).join('|')
   if (fp === current) return
+  const old = [...loaded.values()]
   loaded.clear()
   for (const e of entries) loaded.set(e.id, { fingerprint: `${e.id}:${e.script.length}`, runtime: await bootScript(e) })
+  for (const r of old) r.runtime?.dispose?.()
 }
 
 /** First matching script URL for our source id, or null so the caller falls back to builtin. */
@@ -121,18 +166,20 @@ export async function resolveScripted(state, source, musicInfo) {
   const lxKey = SOURCE_TO_LX_KEY[source]
   if (!lxKey) return null
   await sync(state)
-  for (const { runtime } of loaded.values()) {
-    const def = runtime.sources?.[lxKey]
-    if (!Array.isArray(def?.actions) || !def.actions.includes('musicUrl') || typeof runtime.handler !== 'function') continue
-    const qualitys = Array.isArray(def.qualitys) ? def.qualitys.filter((q) => typeof q === 'string') : []
-    const type = qualitys.includes('320k') ? '320k' : qualitys[0] ?? '128k'
-    const url = await Promise.race([
-      runtime.handler({ source: lxKey, action: 'musicUrl', info: { type, musicInfo } }),
-      new Promise((resolve) => setTimeout(() => resolve(null), 15000)),
-    ]).catch(() => null)
-    if (typeof url === 'string' && /^https?:\/\//.test(url)) return url
+  {
+    for (const { runtime } of loaded.values()) {
+      const def = runtime.sources?.[lxKey]
+      if (!Array.isArray(def?.actions) || !def.actions.includes('musicUrl') || typeof runtime.handler !== 'function') continue
+      const qualitys = Array.isArray(def.qualitys) ? def.qualitys.filter((q) => typeof q === 'string') : []
+      const type = qualitys.includes('320k') ? '320k' : qualitys[0] ?? '128k'
+      const url = await Promise.race([
+        runtime.handler({ source: lxKey, action: 'musicUrl', info: { type, musicInfo: { ...musicInfo, source: lxKey } } }),
+        new Promise((resolve) => setTimeout(() => resolve(null), 15000)),
+      ]).catch(() => null)
+      if (typeof url === 'string' && /^https?:\/\//.test(url)) return url
+    }
+    return null
   }
-  return null
 }
 
 /** Boot (or re-boot) every enabled script and return their {platforms, error} for storage. */
@@ -143,5 +190,7 @@ export async function describeAll(state) {
     const runtime = await bootScript(e)
     out.push({ id: e.id, platforms: runtime.platforms, error: runtime.error ?? '' })
   }
+  // obfuscated scripts probe APIs right after inited; give boot a beat to settle
+  await new Promise((resolve) => setTimeout(resolve, 300))
   return out
 }

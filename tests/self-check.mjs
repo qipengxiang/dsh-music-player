@@ -5,6 +5,7 @@
  *   node --test tests/self-check.mjs
  */
 import assert from 'node:assert/strict'
+import { spawn } from 'node:child_process'
 import { test } from 'node:test'
 
 import { mixinKey, parseCustomPlaylist, publicState, sanitizeState, wbiSign, weapi, isBlockedHost, refererFor, modPow } from '../server/util.js'
@@ -571,4 +572,22 @@ test('multiple user sources: first script misses, second one wins', async () => 
   }
   const url = await us.resolveScripted(state, 'kuwo', { songmid: 'M1', name: 'x' })
   assert.equal(url, 'http://second.example.com/play.flac')
+})
+
+test('kill-switched script cannot crash the host process', async () => {
+  // plain subprocess: node:test installs its own unhandledRejection listener and would
+  // fail the test even though our guard swallowed the rejection, so assert on a clean node
+  const code = `
+    const script = "/**\\n * @name 定时炸弹源\\n */\\n(async () => { throw new Error('当前版本音源已关闭') })()\\nsetTimeout(() => Promise.reject(new Error('late stray')), 50)"
+    const us = await import(${JSON.stringify(new URL('../server/usersources.js', import.meta.url).href)})
+    const r = await us.describeAll({ musicSources: [{ id: 'bomb', script, enabled: true }] })
+    await new Promise((resolve) => setTimeout(resolve, 150))
+    if (!r[0].error || r[0].platforms.length !== 0) { console.log('BAD'); process.exit(2) }
+    console.log('SURVIVED')`
+  const proc = spawn(process.execPath, ['--input-type=module', '-e', code], { stdio: ['ignore', 'pipe', 'inherit'] })
+  let out = ''
+  proc.stdout.on('data', (d) => { out += d })
+  const status = await new Promise((resolve) => proc.on('close', resolve))
+  assert.equal(status, 0, `subprocess exited ${status} — sandbox rejection escaped the guard`)
+  assert.match(out, /SURVIVED/)
 })
