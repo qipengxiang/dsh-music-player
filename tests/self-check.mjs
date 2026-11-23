@@ -502,3 +502,47 @@ test('probeDuration reads mp3 CBR/Xing and m4a mvhd durations', async () => {  c
   assert.equal(await mod.probeDuration(`${dir}/a.m4a`), 65)
   assert.equal(await mod.probeDuration(`${dir}/nope.flac`), 0)
 })
+
+const LX_TEST_SCRIPT = `/**
+ * @name 测试源
+ * @version 1.2.3
+ * @author tester
+ */
+const { EVENT_NAMES, on, send } = globalThis.lx
+on(EVENT_NAMES.request, ({ source, action, info }) => {
+  if (action === 'musicUrl' && source === 'kw') return Promise.resolve('http://script.example.com/play.mp3?sq=' + info.type)
+  return Promise.reject(new Error('nope'))
+})
+send(EVENT_NAMES.inited, { sources: { kw: { type: 'music', actions: ['musicUrl'], qualitys: ['128k', '320k'] } } })`
+
+test('user source scripts: header parse, inited handshake, musicUrl dispatch, fallback', async () => {
+  const us = await import('../server/usersources.js')
+  // 头部注释解析
+  assert.deepEqual(us.parseScriptHeader(LX_TEST_SCRIPT).name, '测试源')
+  assert.equal(us.parseScriptHeader(LX_TEST_SCRIPT).version, '1.2.3')
+  // add 时的握手探测: platforms 映射 kw→kuwo
+  const probe = await us.describeAll({ musicSources: [{ id: 's1', script: LX_TEST_SCRIPT, enabled: true }] })
+  assert.deepEqual(probe[0].platforms, ['kuwo'])
+  assert.equal(probe[0].error, '')
+  // 坏脚本（无 inited）→ error 记录
+  const bad = await us.describeAll({ musicSources: [{ id: 's2', script: 'var x = 1', enabled: true }] })
+  assert.match(bad[0].error, /inited/)
+  // musicUrl 分发: 酷我命中脚本, 音质取 320k, musicInfo 透传
+  const state = { musicSources: [{ id: 's1', script: LX_TEST_SCRIPT, enabled: true }] }
+  const url = await us.resolveScripted(state, 'kuwo', { songmid: 'M123', id: 'M123', name: '晴天', singer: '周杰伦' })
+  assert.equal(url, 'http://script.example.com/play.mp3?sq=320k')
+  // 未覆盖的平台 → null（调用方回落内置源）
+  assert.equal(await us.resolveScripted(state, 'netease', { songmid: 'x' }), null)
+  // 停用后 → null
+  assert.equal(await us.resolveScripted({ musicSources: [{ id: 's1', script: LX_TEST_SCRIPT, enabled: false }] }, 'kuwo', {}), null)
+})
+
+test('sanitizeState/publicState keep user-source meta but strip script bodies', () => {
+  const s = sanitizeState({ musicSources: [{ id: 'a', name: 'n', script: LX_TEST_SCRIPT, enabled: true, platforms: ['kuwo'], error: '' }, { id: 'b' }] })
+  assert.equal(s.musicSources.length, 1)
+  assert.equal(s.musicSources[0].script.length > 0, true)
+  const p = publicState(s)
+  assert.equal(p.musicSources.length, 1)
+  assert.equal('script' in p.musicSources[0], false)
+  assert.equal(p.musicSources[0].name, 'n')
+})

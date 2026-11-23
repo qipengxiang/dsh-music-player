@@ -317,15 +317,33 @@ export function sanitizeState(raw) {
       sourceId: str(d.sourceId, 600),
     })
   }
+  // LX-style user source scripts: raw script text stays server-side only (publicState strips it)
+  out.musicSources = []
+  for (const m of (Array.isArray(s.musicSources) ? s.musicSources : []).slice(0, 20)) {
+    if (!m || typeof m !== 'object' || typeof m.script !== 'string' || !m.script.trim()) continue
+    out.musicSources.push({
+      id: str(m.id, 120) || `src${Date.now().toString(36)}${out.musicSources.length}`,
+      name: str(m.name, 60) || '未命名源',
+      description: str(m.description, 120),
+      version: str(m.version, 40),
+      author: str(m.author, 60),
+      homepage: str(m.homepage, 300),
+      script: m.script.slice(0, 200000),
+      enabled: m.enabled !== false,
+      platforms: (Array.isArray(m.platforms) ? m.platforms : []).filter((p) => ['kuwo', 'kugou', 'qq', 'netease'].includes(p)).slice(0, 8),
+      error: str(m.error, 300),
+    })
+  }
   return out
 }
 
-/** Client-facing view: cookies never leave the server half. */
+/** Client-facing view: cookies and raw user-source scripts never leave the server half. */
 export function publicState(state) {
   return {
     playlists: state.playlists,
     settings: state.settings,
     downloads: state.downloads,
+    musicSources: (state.musicSources ?? []).map(({ script, ...meta }) => meta),
     accounts: Object.fromEntries(
       Object.entries(state.accounts).map(([k, v]) => [k, { name: v.name, uid: v.uid, loggedIn: Boolean(v.cookie || v.uid) }]),
     ),

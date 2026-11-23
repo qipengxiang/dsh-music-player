@@ -265,7 +265,7 @@ window.__ModuleLoader__.load({
     async function resolveUrl(track) {
       try {
         if (track.source === 'local' || track.source === 'custom') return `${API}/stream?u=${encodeURIComponent(track.url)}`
-        const r = await fetch(`${API}/song-url?source=${encodeURIComponent(track.source)}&id=${encodeURIComponent(track.id)}`)
+        const r = await fetch(`${API}/song-url?source=${encodeURIComponent(track.source)}&id=${encodeURIComponent(track.id)}&title=${encodeURIComponent(track.title ?? '')}&artist=${encodeURIComponent(track.artist ?? '')}`)
         const j = await r.json()
         if (r.ok && j.url && j.preview) showToast('汽水 VIP 歌曲，仅播放试听片段')
         return r.ok && j.url ? j.url : ''
@@ -1498,6 +1498,9 @@ window.__ModuleLoader__.load({
       const [psz, setPsz] = useState('10')
       const [accentTmp, setAccentTmp] = useState('')
       const [srcTmp, setSrcTmp] = useState('bilibili')
+      const [srcAdding, setSrcAdding] = useState(false)
+      const [srcText, setSrcText] = useState('')
+      const [srcBusy, setSrcBusy] = useState(false)
       useEffect(() => {
         setPsz(String(store.state.settings.pageSize ?? 10))
         setAccentTmp(store.state.settings.accent ?? '')
@@ -1707,6 +1710,47 @@ window.__ModuleLoader__.load({
               h('option', { value: '5sing' }, '5sing'),
               h('option', { value: 'wusunk' }, '无损控')),
             h('span', { className: 'dshmp-pgnum' }, '搜索页的初始渠道'))),
+        h('div', { className: 'dshmp-set-block' },
+          h('div', { className: 'dshmp-set-field' },
+            h('span', {}, '自定义音源'),
+            h('button', { className: 'dshmp-mini', onClick: () => setSrcAdding(!srcAdding) }, srcAdding ? '收起' : '添加'),
+            h('span', { className: 'dshmp-pgnum' }, 'LX 自定义源脚本')),
+          srcAdding ? h('div', { style: { display: 'flex', flexDirection: 'column', gap: 6 } },
+            h('textarea', {
+              className: 'dshmp-input', style: { height: 88, resize: 'vertical', fontFamily: 'monospace', fontSize: 11 },
+              placeholder: '粘贴 lx-music 自定义源脚本（/** @name … */ 开头）',
+              value: srcText, onChange: (e) => setSrcText(e.target.value),
+            }),
+            h('div', {}, h('button', {
+              className: 'dshmp-mini primary', disabled: srcBusy || !srcText.trim(),
+              onClick: async () => {
+                setSrcBusy(true)
+                try {
+                  store.state = await api('/music-source/add', { method: 'POST', body: JSON.stringify({ script: srcText }) })
+                  setSrcText(''); setSrcAdding(false); emit()
+                  showToast('自定义源已添加')
+                } catch (e) { showToast(String(e.message ?? e)) }
+                setSrcBusy(false)
+              },
+            }, srcBusy ? '添加中…' : '添加'))) : null,
+          ...(s.state.musicSources ?? []).map((m) => h('div', { className: 'dshmp-set-field' },
+            h('input', {
+              type: 'checkbox', checked: m.enabled !== false, title: m.enabled !== false ? '已启用' : '已停用',
+              onChange: async (e) => {
+                try { store.state = await api('/music-source/toggle', { method: 'POST', body: JSON.stringify({ id: m.id, enabled: e.target.checked }) }); emit() }
+                catch (e2) { showToast(String(e2.message ?? e2)) }
+              },
+            }),
+            h('span', { style: { flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' } },
+              `${m.name}${m.version ? ` v${m.version}` : ''}${m.author ? ` · ${m.author}` : ''}`,
+              m.platforms?.length ? `（覆盖：${m.platforms.map((p) => ({ kuwo: '酷我', kugou: '酷狗', qq: 'QQ', netease: '网易云' }[p] ?? p)).join('、')}）` : ''),
+            m.error ? h('span', { className: 'dshmp-dur', title: m.error }, '加载失败') : null,
+            h('button', {
+              className: 'dshmp-mini', title: '删除', onClick: async () => {
+                try { store.state = await api('/music-source/remove', { method: 'POST', body: JSON.stringify({ id: m.id }) }); emit() }
+                catch (e2) { showToast(String(e2.message ?? e2)) }
+              },
+            }, '删除')))),
         h('div', { className: 'dshmp-set-block' },
           h('div', { className: 'dshmp-section' }, '快捷键'),
           h('div', { className: 'dshmp-empty' }, `默认 ${isMac ? '⌥ Option' : 'Ctrl+Alt'} + ←/→ 上一曲/下一曲 · P 播放暂停 · M 播放模式，可清除或重新录制`),

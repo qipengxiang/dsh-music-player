@@ -20,6 +20,7 @@ import * as kugou from './server/kugou.js'
 import * as qq from './server/qq.js'
 import * as pan from './server/pan.js'
 import * as fivesing from './server/5sing.js'
+import * as usersources from './server/usersources.js'
 import * as wusunk from './server/wusunk.js'
 import * as qishui from './server/qishui.js'
 import { tagFile } from './server/id3.js'
@@ -304,8 +305,12 @@ const qishuiHelpers = {
   },
 }
 
-/** Raw remote stream result per source ({url, preview?}) — shared by play + download flows. */
-async function remoteSongUrl(state, source, id) {
+/** Raw remote stream result per source ({url, preview?}) — shared by play + download flows.
+ * Enabled LX-style user scripts take precedence for kuwo/kugou/qq/netease; builtin is the fallback. */
+async function remoteSongUrl(state, source, id, info = {}) {
+  const musicInfo = { songmid: id, id, name: info.title ?? '', singer: info.artist ?? '', source }
+  const scripted = await usersources.resolveScripted(state, source, musicInfo).catch(() => null)
+  if (scripted) return { url: scripted }
   const out =
     source === 'netease' ? await netease.songUrl(id, cookieOf(state, 'netease'))
     : source === 'bilibili' ? await bilibili.songUrl(id, cookieOf(state, 'bilibili'))
@@ -453,6 +458,37 @@ export function apply(ctx) {
           return sendJSON(res, 200, publicState(next))
         }
 
+        if (action === 'music-source/add' && req.method === 'POST') {
+          const body = await readJSON(req)
+          const script = String(body.script ?? '').trim()
+          if (!script) throw new Error('脚本报文为空')
+          const meta = usersources.parseScriptHeader(script)
+          const entry = { id: `src${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`, ...meta, script, enabled: true, platforms: [], error: '' }
+          const probe = await usersources.describeAll({ musicSources: [entry] })
+          entry.platforms = probe[0].platforms
+          entry.error = probe[0].error
+          const next = sanitizeState({ ...state, musicSources: [...state.musicSources, entry] })
+          await writeState(next)
+          return sendJSON(res, 200, publicState(next))
+        }
+
+        if (action === 'music-source/toggle' && req.method === 'POST') {
+          const body = await readJSON(req)
+          const next = sanitizeState({
+            ...state,
+            musicSources: (state.musicSources ?? []).map((m) => (m.id === body.id ? { ...m, enabled: body.enabled !== false } : m)),
+          })
+          await writeState(next)
+          return sendJSON(res, 200, publicState(next))
+        }
+
+        if (action === 'music-source/remove' && req.method === 'POST') {
+          const body = await readJSON(req)
+          const next = sanitizeState({ ...state, musicSources: (state.musicSources ?? []).filter((m) => m.id !== body.id) })
+          await writeState(next)
+          return sendJSON(res, 200, publicState(next))
+        }
+
         if (action === 'playlist/add-folder' && req.method === 'POST') {
           const body = await readJSON(req)
           const { root, tracks } = await scanFolder(body.root)
@@ -594,7 +630,8 @@ export function apply(ctx) {
         if (action === 'song-url' && req.method === 'GET') {
           const id = url.searchParams.get('id') ?? ''
           const source = url.searchParams.get('source') ?? ''
-          const remote = await remoteSongUrl(state, source, id).catch((error) => ({ error: String(error?.message ?? error) }))
+          const info = { title: url.searchParams.get('title') ?? '', artist: url.searchParams.get('artist') ?? '' }
+          const remote = await remoteSongUrl(state, source, id, info).catch((error) => ({ error: String(error?.message ?? error) }))
           if (remote.error) return sendJSON(res, 404, { error: remote.error })
           return sendJSON(res, 200, { url: `${ROUTE_PREFIX}/stream?u=${encodeURIComponent(remote.url)}`, ...(remote.preview ? { preview: true } : {}) })
         }
@@ -817,7 +854,7 @@ export function apply(ctx) {
           const key = dlKey(source, id)
           setDl(key, { phase: 'linking' })
           try {
-            const remote = await remoteSongUrl(state, source, id)
+            const remote = await remoteSongUrl(state, source, id, { title: String(body.title ?? ''), artist: String(body.artist ?? '') })
             const headers = {}
             const ref = refererFor(remote.url)
             if (ref) headers.referer = ref
