@@ -650,9 +650,11 @@ export function apply(ctx) {
             if (r.state === 'confirmed') {
               await qishui.flush()
               const acc = await qishui.account()
+              // flush 刚把 session 写进文件；用请求入口的旧快照做基底会把 session 冲掉，必须重读
+              const fresh = await readState()
               const next = sanitizeState({
-                ...state,
-                accounts: { ...state.accounts, soda: { ...state.accounts.soda, name: acc.name, uid: acc.uid } },
+                ...fresh,
+                accounts: { ...fresh.accounts, soda: { ...(fresh.accounts.soda ?? {}), name: acc.name, uid: acc.uid } },
               })
               await writeState(next)
               return sendJSON(res, 200, { code: 803, nickname: acc.name, account: { name: acc.name, uid: acc.uid, loggedIn: true } })

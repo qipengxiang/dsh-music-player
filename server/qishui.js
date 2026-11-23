@@ -4,8 +4,12 @@
  * login session live in the state file, bridged through callbacks owned by index.js.
  */
 import { createRequire } from 'node:module'
+import { dirname, join } from 'node:path'
 const require = createRequire(import.meta.url)
 const { createQishuiApi, createQishuiDeviceId, isQishuiDeviceId } = require('qishui-music-api')
+// package exports only expose '.', so reach the protocol helpers by absolute path (pinned 0.2.1)
+const { QISHUI_PREFIX, QISHUI_UA, qishuiParams, qishuiGuardHeaders } = require(
+  join(dirname(require.resolve('qishui-music-api')), 'src/protocol.cjs'))
 
 // In-memory mirror of accounts.soda; the file is the durable truth, hydrated in ensure().
 // One shared client: the lib keeps its pending-QR map per instance, so recreating it per
@@ -101,7 +105,57 @@ export async function searchPlaylists(q) {
   }
 }
 
+/**
+ * Pick the best plaintext full-track URL from player_info, mirroring the lib's
+ * playback.cjs ranking. Pure function so tests can feed fixtures.
+ * shortcut: no url_player_info fallback; BYD car service always lists video_model first.
+ */
+export function pickAudioUrl(player) {
+  if (!player) return null
+  const rank = { standard: 0, high: 1, lossless: 2, hires: 3 }
+  for (const variant of ['full', 'preview']) {
+    const info = player[variant]?.video_model_info
+    if (!info?.video_model) continue
+    let model
+    try { model = typeof info.video_model === 'string' ? JSON.parse(info.video_model) : info.video_model }
+    catch { return null }
+    const encrypted = (item) => Boolean(item.encrypt_info?.encrypt || item.encrypt_info?.spade_a || item.PlayAuth || Number(item.Encrypt || 0))
+    const levels = { medium: 'standard', higher: 'high', highest: 'high', lossless: 'lossless', hi_res: 'hires' }
+    const cands = (model.video_list || []).filter((i) => !encrypted(i) && i.main_url)
+      .map((i) => ({ url: i.main_url, q: levels[i.video_meta?.quality] ?? 'standard', br: Number(i.video_meta?.bitrate || 0) }))
+    if (!cands.length) continue
+    const ok = cands.filter((c) => rank[c.q] <= rank.standard)
+    const best = (ok.length ? ok : cands).sort((a, b) => rank[b.q] - rank[a.q] || b.br - a.br)[0]
+    return { url: best.url, preview: variant === 'preview' }
+  }
+  return null
+}
+
+/**
+ * Signed /media/mget/ with the logged-in credential. The lib's 'audio' op always reads
+ * anonymously (catalog.track passes no credential), so copyright tracks only expose the
+ * 60s preview; this asks with ticket-guard headers so the account's full variant shows up.
+ */
+async function signedAudio(id) {
+  const c = mem.session
+  if (!c) return null
+  const qs = new URLSearchParams(qishuiParams(c.deviceId))
+  const res = await fetch(`https://open.douyin.com${QISHUI_PREFIX}/media/mget/?${qs}`, {
+    method: 'POST',
+    headers: { 'user-agent': QISHUI_UA, 'content-type': 'application/json', ...qishuiGuardHeaders(c, '/media/mget/') },
+    body: JSON.stringify({ media_list: [{ id, type: 'track' }], card_context: {}, common_params: c.userId ? { user_id: c.userId } : {} }),
+    signal: AbortSignal.timeout(25000),
+  })
+  if (!res.ok) return null
+  const data = await res.json().catch(() => null)
+  if (Number(data?.err_no ?? 0)) return null
+  const media = (data?.data?.media_list ?? []).find((m) => String(m.media_id || m.track_entity?.base_info?.id) === id)
+  return pickAudioUrl(media?.track_entity?.player_info)
+}
+
 export async function songUrl(id) {
+  const signed = await signedAudio(id).catch(() => null)
+  if (signed?.url) return { url: String(signed.url) }
   const data = await req('audio', { id, quality: 'standard' })
   if (!data.url) return { error: data.preview ? '该歌曲为试听片段' : '该歌曲需要汽水 VIP，暂不支持' }
   return { url: String(data.url) }
