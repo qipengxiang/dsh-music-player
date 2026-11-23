@@ -267,6 +267,7 @@ window.__ModuleLoader__.load({
         if (track.source === 'local' || track.source === 'custom') return `${API}/stream?u=${encodeURIComponent(track.url)}`
         const r = await fetch(`${API}/song-url?source=${encodeURIComponent(track.source)}&id=${encodeURIComponent(track.id)}`)
         const j = await r.json()
+        if (r.ok && j.url && j.preview) showToast('汽水 VIP 歌曲，仅播放试听片段')
         return r.ok && j.url ? j.url : ''
       } catch {
         return ''

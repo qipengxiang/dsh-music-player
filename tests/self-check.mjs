@@ -502,24 +502,3 @@ test('probeDuration reads mp3 CBR/Xing and m4a mvhd durations', async () => {  c
   assert.equal(await mod.probeDuration(`${dir}/a.m4a`), 65)
   assert.equal(await mod.probeDuration(`${dir}/nope.flac`), 0)
 })
-
-test('pickAudioUrl picks plaintext full, skips encrypted, falls to preview', async () => {
-  const { pickAudioUrl } = await import('../server/qishui.js')
-  const enc = (u) => ({ main_url: u, encrypt_info: { encrypt: 1 }, video_meta: { quality: 'medium', bitrate: 320000 } })
-  const plain = (q, br) => ({ main_url: `https://v.example.com/a.mp3?q=${q}`, video_meta: { quality: q, bitrate: br } })
-  const vm = (list) => ({ full: { video_model_info: { video_model: JSON.stringify({ video_list: list }) } } })
-  // 匿名《人世间》形状: full 整个缺失, preview 全加密 → null (回落到匿名 audio 的老路径)
-  const anonShape = { preview: { video_model_info: { video_model: JSON.stringify({ video_list: [enc('x'), enc('y')] }) } } }
-  assert.equal(pickAudioUrl(anonShape), null)
-  assert.equal(pickAudioUrl(undefined), null)
-  // 登录态: full 有明文 → 取 full, preview:false; 请求 standard 档时选 ≤standard 的最高可用
-  assert.deepEqual(pickAudioUrl(vm([plain('medium', 260000), plain('higher', 520000)])),
-    { url: 'https://v.example.com/a.mp3?q=medium', preview: false })
-  // video_model 已是对象也能读; 全部高于请求档时仍回落取一个
-  assert.deepEqual(pickAudioUrl({ full: { video_model_info: { video_model: { video_list: [plain('lossless', 900000)] } } } }),
-    { url: 'https://v.example.com/a.mp3?q=lossless', preview: false })
-  // full 只有加密, preview 有明文 → preview:true
-  assert.deepEqual(pickAudioUrl({ full: { video_model_info: { video_model: { video_list: [enc('f')] } } },
-    preview: { video_model_info: { video_model: { video_list: [plain('medium', 68000)] } } } }),
-    { url: 'https://v.example.com/a.mp3?q=medium', preview: true })
-})

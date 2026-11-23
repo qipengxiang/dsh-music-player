@@ -304,7 +304,7 @@ const qishuiHelpers = {
   },
 }
 
-/** Raw remote stream URL per source (no proxy wrapper) — shared by play + download flows. */
+/** Raw remote stream result per source ({url, preview?}) — shared by play + download flows. */
 async function remoteSongUrl(state, source, id) {
   const out =
     source === 'netease' ? await netease.songUrl(id, cookieOf(state, 'netease'))
@@ -318,7 +318,7 @@ async function remoteSongUrl(state, source, id) {
     : { url: '' }
   if (out.error) throw new Error(out.error)
   if (!out.url) throw new Error('没有拿到播放地址')
-  return out.url
+  return out
 }
 
 async function lyricOf(state, source, id) {
@@ -596,7 +596,7 @@ export function apply(ctx) {
           const source = url.searchParams.get('source') ?? ''
           const remote = await remoteSongUrl(state, source, id).catch((error) => ({ error: String(error?.message ?? error) }))
           if (remote.error) return sendJSON(res, 404, { error: remote.error })
-          return sendJSON(res, 200, { url: `${ROUTE_PREFIX}/stream?u=${encodeURIComponent(remote)}` })
+          return sendJSON(res, 200, { url: `${ROUTE_PREFIX}/stream?u=${encodeURIComponent(remote.url)}`, ...(remote.preview ? { preview: true } : {}) })
         }
 
         if (action === 'lyrics' && req.method === 'GET') {
@@ -819,9 +819,9 @@ export function apply(ctx) {
           try {
             const remote = await remoteSongUrl(state, source, id)
             const headers = {}
-            const ref = refererFor(remote)
+            const ref = refererFor(remote.url)
             if (ref) headers.referer = ref
-            const { buf, contentType } = await httpBin(remote, {
+            const { buf, contentType } = await httpBin(remote.url, {
               headers,
               onProgress: (received, total) => setDl(key, { phase: 'downloading', received, total }),
             })
