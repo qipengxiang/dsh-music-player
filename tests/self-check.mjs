@@ -620,3 +620,17 @@ test('customUnderlying maps custom ids to a covered builtin platform (netease pr
   assert.deepEqual(customUnderlying({ musicSources: [{ id: 'x', enabled: false, platforms: ['netease'] }] }, 'custom:x'), { src: '', preferId: '' })
   assert.deepEqual(customUnderlying({ musicSources: [{ id: 'k', enabled: true, platforms: ['kugou'] }] }, 'custom:k'), { src: 'kugou', preferId: 'k' })
 })
+
+test('highlightJs 着色注释/字符串/关键字/数字并转义 HTML', async () => {
+  const { highlightJs } = (await loadClient()).plugin.__pure
+  const src = 'const x = 1 < 2 // 注释\nlet s = "a<b\'c"\n/* 块注释 */ if (0x1F) return `t`'
+  const out = highlightJs(src)
+  assert.ok(out.includes('<span class="dshmp-tok-c">'), 'comment colored: ' + out)
+  assert.ok(out.includes('<span class="dshmp-tok-s">'), 'string colored')
+  assert.ok(out.includes('<span class="dshmp-tok-k">const</span>'), 'keyword colored')
+  assert.ok(out.includes('<span class="dshmp-tok-n">0x1F</span>'), 'hex number colored')
+  assert.ok(!out.includes('<1'), 'angle bracket escaped: ' + out)
+  assert.ok(out.includes('&lt; '), 'plain < escaped')
+  // 未闭合字符串（脚本截断）不应抛错
+  assert.equal(typeof highlightJs('let a = "unterminated'), 'string')
+})

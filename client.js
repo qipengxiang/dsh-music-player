@@ -30,6 +30,24 @@ window.__ModuleLoader__.load({
       '.dshmp-pop-head .grow{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}',
       '.dshmp-pop-set{margin-left:auto;flex:none}',
       '.dshmp-setmodal{width:min(560px,92vw);max-height:min(620px,86vh)}',
+      '.dshmp-srcmodal{width:min(720px,92vw);max-height:min(680px,88vh)}',
+      '.dshmp-codebox{position:relative;flex:1;min-height:320px;border:1px solid var(--dsw-alias-border-l2,#dcdcdc);border-radius:var(--dsw-radius-sm,4px);overflow:hidden;background:var(--dsw-alias-bg-layer-1,#fff)}',
+      '.dshmp-codehl,.dshmp-codeta{margin:0;padding:10px 12px;font:11px/1.6 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;tab-size:2;white-space:pre-wrap;word-break:break-all;overflow:auto;box-sizing:border-box}',
+      '.dshmp-codehl{position:absolute;inset:0;pointer-events:none;color:var(--dsw-alias-label-primary,#333)}',
+      '.dshmp-codeta{position:relative;width:100%;height:100%;min-height:320px;border:none;background:0 0;color:transparent;caret-color:var(--dsw-alias-label-primary,#333);resize:none;outline:none}',
+      '.dshmp-tok-c{color:var(--dsw-alias-label-tertiary,#6a737d);font-style:italic}',
+      '.dshmp-tok-s{color:#a31585}',
+      '.dshmp-tok-k{color:#0000c0;font-weight:600}',
+      '.dshmp-tok-n{color:#098658}',
+      '.dshmp-srclist{display:flex;flex-direction:column;gap:2px}',
+      '.dshmp-srclist .hd{display:flex;align-items:center;gap:6px;padding:0 6px 2px;border-bottom:1px solid var(--dsw-alias-border-l2,#eee)}',
+      '.dshmp-srclist .rw{display:flex;align-items:center;gap:6px;padding:2px 6px;border-radius:var(--dsw-radius-sm,4px)}',
+      '.dshmp-srclist .rw:hover{background:var(--dsw-alias-interactive-bg-hover)}',
+      '.dshmp-srclist .n{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}',
+      '.dshmp-srclist .v,.dshmp-srclist .a{flex:none;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--dsw-alias-label-secondary)}',
+      '.dshmp-srclist .v{width:86px}',
+      '.dshmp-srclist .a{width:120px}',
+      '.dshmp-srclist .o{flex:none;display:flex;gap:4px;align-items:center}',
       '.dshmp-setwrap{flex:1;min-height:0;display:flex;flex-direction:column}',
       '.dshmp-setwrap .dshmp-settings{flex:1;min-height:0;overflow:auto;padding:10px 12px}',
       '.dshmp-setfoot{flex:none;display:flex;align-items:center;gap:10px;padding:10px 12px;border-top:1px solid var(--dsw-alias-border-l2,#eee)}',
@@ -159,6 +177,20 @@ window.__ModuleLoader__.load({
     function fmtTime(sec) {
       const s = Math.max(0, Math.floor(Number(sec) || 0))
       return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`
+    }
+
+    /** JS 源码高亮：注释/字符串/关键字/数字着色，HTML 转义防注入（无正则字面量识别，避免误切字符串）。 */
+    function highlightJs(code) {
+      const esc = (t) => t.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      const re = /(\/\*[\s\S]*?(?:\*\/|$)|\/\/[^\n]*)|('(?:\\.|[^'\\\n])*'|"(?:\\.|[^"\\\n])*"|`(?:\\.|[^`\\])*`)|\b(const|let|var|function|return|if|else|for|while|new|typeof|instanceof|class|extends|async|await|try|catch|finally|throw|switch|case|break|continue|default|delete|in|of|do|this|null|undefined|true|false|void|yield|static)\b|(\b0x[\da-fA-F]+\b|\b\d+(?:\.\d+)?\b)/g
+      let out = '', last = 0, m
+      while ((m = re.exec(code))) {
+        if (m.index > last) out += esc(code.slice(last, m.index))
+        const cls = m[1] ? 'c' : m[2] ? 's' : m[3] ? 'k' : 'n'
+        out += `<span class="dshmp-tok-${cls}">${esc(m[0])}</span>`
+        last = m.index + m[0].length
+      }
+      return out + esc(code.slice(last))
     }
 
     /** Coerce pager input (may be a MouseEvent from onClick: doSearch) to a sane page number. */
@@ -1509,6 +1541,7 @@ window.__ModuleLoader__.load({
       const [srcEditId, setSrcEditId] = useState(null) // null=收起, 'new'=新增, 其他=编辑该 id
       const [srcText, setSrcText] = useState('')
       const [srcBusy, setSrcBusy] = useState(false)
+      const srcHlRef = useRef(null) // 高亮层 <code>，与 textarea 同步内容与滚动
       const openSrc = async (id) => {
         setSrcEditId(id)
         setSrcText(id === 'new' ? '' : '加载中…')
@@ -1516,6 +1549,21 @@ window.__ModuleLoader__.load({
         try { const j = await api(`/music-source/script?id=${encodeURIComponent(id)}`); setSrcText(j.script ?? '') }
         catch (e) { setSrcText(''); showToast(String(e.message ?? e)) }
       }
+      const closeSrc = () => { setSrcEditId(null); setSrcText('') }
+      const saveSrc = async () => {
+        setSrcBusy(true)
+        try {
+          const path = srcEditId === 'new' ? '/music-source/add' : '/music-source/update'
+          const body = srcEditId === 'new' ? { script: srcText } : { id: srcEditId, script: srcText }
+          store.state = await api(path, { method: 'POST', body: JSON.stringify(body) })
+          closeSrc(); emit()
+          showToast(srcEditId === 'new' ? '自定义源已添加' : '自定义源已更新')
+        } catch (e) { showToast(String(e.message ?? e)) }
+        setSrcBusy(false)
+      }
+      useEffect(() => {
+        if (srcHlRef.current) srcHlRef.current.innerHTML = highlightJs(srcText) + '\n'
+      }, [srcText])
       useEffect(() => {
         setPsz(String(store.state.settings.pageSize ?? 10))
         setAccentTmp(store.state.settings.accent ?? '')
@@ -1646,6 +1694,30 @@ window.__ModuleLoader__.load({
               h('div', { style: { display: 'flex', gap: 6 } },
                 h('button', { className: 'dshmp-mini primary', onClick: saveEdit }, '保存'),
                 h('button', { className: 'dshmp-mini', onClick: () => setEditing(null) }, '取消'))))) : null,
+        srcEditId != null ? h('div', { className: 'dshmp-modal', onClick: closeSrc },
+          h('div', { className: 'dshmp-pop dshmp-srcmodal', style: { position: 'static' }, onClick: (e) => e.stopPropagation() },
+            h('div', { className: 'dshmp-pop-head' },
+              h('span', { className: 'grow' }, srcEditId === 'new'
+                ? '新增自定义源'
+                : `编辑音源${(s.state.musicSources ?? []).find((m) => m.id === srcEditId)?.name ? '：' + s.state.musicSources.find((m) => m.id === srcEditId).name : ''}`),
+              h('button', { className: 'dshmp-btn dshmp-pop-x', title: '关闭', onClick: closeSrc }, '✕')),
+            h('div', { className: 'dshmp-body' },
+              h('div', { className: 'dshmp-codebox' },
+                h('pre', { className: 'dshmp-codehl', 'aria-hidden': 'true' }, h('code', { ref: srcHlRef })),
+                h('textarea', {
+                  className: 'dshmp-codeta', spellCheck: false,
+                  placeholder: '粘贴 lx-music 自定义源脚本（/** @name … */ 头部注释开头）',
+                  value: srcText,
+                  onChange: (e) => setSrcText(e.target.value),
+                  onScroll: (e) => {
+                    const p = e.target.previousElementSibling // pre 与 textarea 同容器，滚动对齐
+                    if (p) { p.scrollTop = e.target.scrollTop; p.scrollLeft = e.target.scrollLeft }
+                  },
+                })),
+              h('div', { style: { display: 'flex', gap: 6, alignItems: 'center', flex: 'none' } },
+                h('span', { className: 'dshmp-pgnum grow' }, '脚本头部需含 @name/@version/@author 注释'),
+                h('button', { className: 'dshmp-mini primary', disabled: srcBusy || !srcText.trim(), onClick: saveSrc }, srcBusy ? '保存中…' : '保存'),
+                h('button', { className: 'dshmp-mini', onClick: closeSrc }, '取消'))))) : null,
         h('div', { className: 'dshmp-set-block' },
           h('div', { className: 'dshmp-section' }, '第三方账号'),
           platforms.map(([id, badge, label]) => {
@@ -1727,49 +1799,38 @@ window.__ModuleLoader__.load({
               ...(store.state.musicSources ?? []).filter((m) => m.enabled !== false).map((m) => h('option', { key: m.id, value: `custom:${m.id}` }, `${m.name}（自定义）`))),
             h('span', { className: 'dshmp-pgnum' }, '搜索页的初始渠道'))),
         h('div', { className: 'dshmp-set-block' },
-          h('div', { className: 'dshmp-set-field' },
-            h('span', {}, '自定义音源'),
-            h('button', { className: 'dshmp-mini', onClick: () => (srcEditId == null ? openSrc('new') : setSrcEditId(null)) }, srcEditId == null ? '添加' : '收起'),
-            h('span', { className: 'dshmp-pgnum' }, 'LX 自定义源脚本')),
-          srcEditId != null ? h('div', { style: { display: 'flex', flexDirection: 'column', gap: 6 } },
-            h('textarea', {
-              className: 'dshmp-input', style: { height: 88, resize: 'vertical', fontFamily: 'monospace', fontSize: 11 },
-              placeholder: '粘贴 lx-music 自定义源脚本（/** @name … */ 开头）',
-              value: srcText, onChange: (e) => setSrcText(e.target.value),
-            }),
-            h('div', {}, h('button', {
-              className: 'dshmp-mini primary', disabled: srcBusy || !srcText.trim(),
-              onClick: async () => {
-                setSrcBusy(true)
-                try {
-                  const path = srcEditId === 'new' ? '/music-source/add' : '/music-source/update'
-                  const body = srcEditId === 'new' ? { script: srcText } : { id: srcEditId, script: srcText }
-                  store.state = await api(path, { method: 'POST', body: JSON.stringify(body) })
-                  setSrcText(''); setSrcEditId(null); emit()
-                  showToast(srcEditId === 'new' ? '自定义源已添加' : '自定义源已更新')
-                } catch (e) { showToast(String(e.message ?? e)) }
-                setSrcBusy(false)
-              },
-            }, srcBusy ? '保存中…' : '保存'))) : null,
-          ...(s.state.musicSources ?? []).map((m) => h('div', { className: 'dshmp-set-field' },
-            h('input', {
-              type: 'checkbox', checked: m.enabled !== false, title: m.enabled !== false ? '已启用' : '已停用',
-              onChange: async (e) => {
-                try { store.state = await api('/music-source/toggle', { method: 'POST', body: JSON.stringify({ id: m.id, enabled: e.target.checked }) }); emit() }
-                catch (e2) { showToast(String(e2.message ?? e2)) }
-              },
-            }),
-            h('span', { style: { flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' } },
-              `${m.name}${m.version ? ` v${m.version}` : ''}${m.author ? ` · ${m.author}` : ''}`,
-              m.platforms?.length ? `（覆盖：${m.platforms.map((p) => ({ kuwo: '酷我', kugou: '酷狗', qq: 'QQ', netease: '网易云' }[p] ?? p)).join('、')}）` : ''),
-            m.error ? h('span', { className: 'dshmp-dur', title: m.error }, '加载失败') : null,
-            h('button', { className: 'dshmp-mini', title: '编辑脚本', onClick: () => openSrc(m.id) }, '编辑'),
-            h('button', {
-              className: 'dshmp-mini', title: '删除', onClick: async () => {
-                try { store.state = await api('/music-source/remove', { method: 'POST', body: JSON.stringify({ id: m.id }) }); emit() }
-                catch (e2) { showToast(String(e2.message ?? e2)) }
-              },
-            }, '删除')))),
+          h('div', { style: { display: 'flex', alignItems: 'center', gap: 6 } },
+            h('span', { style: { fontSize: 12, color: 'var(--dsw-alias-label-secondary)' } }, '自定义源'),
+            h('span', { style: { flex: 1 } }),
+            h('button', { className: 'dshmp-mini dshmp-addbtn', title: '添加自定义源', onClick: () => openSrc('new') }, '＋')),
+          (s.state.musicSources ?? []).length === 0 ? h('div', { className: 'dshmp-empty' }, '还没有自定义源，点击 ＋ 添加') : h('div', { className: 'dshmp-srclist' },
+            h('div', { className: 'hd' },
+              h('span', { className: 'n dshmp-pgnum' }, '名称'),
+              h('span', { className: 'v dshmp-pgnum' }, '版本'),
+              h('span', { className: 'a dshmp-pgnum' }, '作者'),
+              h('span', { className: 'o dshmp-pgnum' }, '操作')),
+            ...(s.state.musicSources ?? []).map((m) => h('div', { className: 'rw', key: m.id },
+              h('span', { className: 'n', title: m.error || (m.platforms?.length ? `覆盖：${m.platforms.join('、')}` : undefined) },
+                m.name,
+                m.error ? h('span', { className: 'dshmp-pgnum' }, '（加载失败）') : null,
+                m.platforms?.length ? h('span', { className: 'dshmp-pgnum' }, ` · ${m.platforms.map((p) => ({ kuwo: '酷我', kugou: '酷狗', qq: 'QQ', netease: '网易云' }[p] ?? p)).join('、')}`) : null),
+              h('span', { className: 'v' }, m.version || '—'),
+              h('span', { className: 'a' }, m.author || '—'),
+              h('span', { className: 'o' },
+                h('input', {
+                  type: 'checkbox', checked: m.enabled !== false, title: m.enabled !== false ? '已启用（点击停用）' : '已停用（点击启用）',
+                  onChange: async (e) => {
+                    try { store.state = await api('/music-source/toggle', { method: 'POST', body: JSON.stringify({ id: m.id, enabled: e.target.checked }) }); emit() }
+                    catch (e2) { showToast(String(e2.message ?? e2)) }
+                  },
+                }),
+                h('button', { className: 'dshmp-mini', title: '编辑脚本', onClick: () => openSrc(m.id) }, '编辑'),
+                h('button', {
+                  className: 'dshmp-mini', title: '删除', onClick: async () => {
+                    try { store.state = await api('/music-source/remove', { method: 'POST', body: JSON.stringify({ id: m.id }) }); emit() }
+                    catch (e2) { showToast(String(e2.message ?? e2)) }
+                  },
+                }, '删除')))))),
         h('div', { className: 'dshmp-set-block' },
           h('div', { className: 'dshmp-section' }, '快捷键'),
           h('div', { className: 'dshmp-empty' }, `默认 ${isMac ? '⌥ Option' : 'Ctrl+Alt'} + ←/→ 上一曲/下一曲 · P 播放暂停 · M 播放模式，可清除或重新录制`),
@@ -1923,7 +1984,7 @@ window.__ModuleLoader__.load({
         ctx.slots.inject('settings.section.icon', () =>
           ctx.slots.register({ name: 'settings.section.icon', id: 'dsh-music-player' }, SettingsSectionIcon))
       },
-      __pure: { parseLrc, fmtTime, pickNextIndex, nextMode, decodeBytes, dlRing, PAGE_SIZE, safePage, comboOf, sortRows, nextSort },
+      __pure: { parseLrc, fmtTime, pickNextIndex, nextMode, decodeBytes, dlRing, PAGE_SIZE, safePage, comboOf, sortRows, nextSort, highlightJs },
     }
     return plugin
   },
