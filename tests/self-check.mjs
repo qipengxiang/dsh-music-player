@@ -592,6 +592,76 @@ test('kill-switched script cannot crash the host process', async () => {
   assert.match(out, /SURVIVED/)
 })
 
+const lxScript = (body) => `/** @name probe */\nconst { EVENT_NAMES, on, send } = globalThis.lx\n${body}\nsend(EVENT_NAMES.inited, { sources: { kw: { type: 'music', actions: ['musicUrl'], qualitys: ['128k'] } } })`
+const LX_GOOD = { id: 'good', enabled: true, script: lxScript("on(EVENT_NAMES.request, () => Promise.resolve('http://good.example.com/1.mp3'))") }
+
+test('user source scripts are isolated from the host: no console hijack, no shared globals, exit only kills the thread', async () => {
+  const us = await import('../server/usersources.js')
+  const hostLog = console.log
+  const state = { musicSources: [
+    // sixyin 式脚本：静音日志，再从定时器里把进程带走
+    { id: 'exiter', enabled: true, script: lxScript("console.log = () => {}\nsetTimeout(() => setTimeout.constructor('return process')().exit(3), 0)\non(EVENT_NAMES.request, () => Promise.resolve('http://dead.example.com/never.mp3'))") },
+    { id: 'peek', enabled: true, script: lxScript("globalThis.HOST_LEAK = 1\nconst p = setTimeout.constructor('return process')()\nconst wt = p.getBuiltinModule('node:worker_threads')\non(EVENT_NAMES.request, () => Promise.resolve('http://x.example.com/?main=' + wt.isMainThread))") },
+  ] }
+  const info = { songmid: 'M' }
+  // 第一支脚本退出后出局，第二支接手；它逃逸拿到的 process 属于 Worker 线程，不是宿主主线程
+  const hit = 'http://x.example.com/?main=false'
+  assert.equal(await us.resolveScripted(state, 'kuwo', info), hit)
+  assert.equal(console.log, hostLog) // 宿主日志函数没被换掉
+  assert.equal(globalThis.HOST_LEAK, undefined) // 脚本的全局不落在宿主上
+  // 卸载时清空线程；之后再用到会重新启动
+  us.disposeAll()
+  assert.equal(await us.resolveScripted(state, 'kuwo', info), hit)
+  us.disposeAll()
+})
+
+test('editing a script in place (same length) reboots it', async () => {
+  const us = await import('../server/usersources.js')
+  const e = { id: 'e', enabled: true, script: lxScript("on(EVENT_NAMES.request, () => Promise.resolve('http://old.example.com/a.mp3'))") }
+  assert.equal(await us.resolveScripted({ musicSources: [e] }, 'kuwo', {}), 'http://old.example.com/a.mp3')
+  e.script = e.script.replace('old.example.com/a', 'new.example.com/b')
+  assert.equal(await us.resolveScripted({ musicSources: [e] }, 'kuwo', {}), 'http://new.example.com/b.mp3')
+})
+
+test('a spinning script hits the resolve deadline, is terminated, and the chain moves on', async (t) => {
+  const us = await import('../server/usersources.js')
+  // 应答一次，之后死循环
+  const state = { musicSources: [{ id: 'spin', enabled: true, script: lxScript("let n = 0\non(EVENT_NAMES.request, () => (++n === 1 ? Promise.resolve('http://spin.example.com/once.mp3') : (() => { while (true) {} })()))") }, LX_GOOD] }
+  t.mock.timers.enable({ apis: ['setTimeout'] })
+  // 第一次正常应答 = 线程已启动（不靠真实等待）
+  assert.equal(await us.resolveScripted(state, 'kuwo', { songmid: 'M' }), 'http://spin.example.com/once.mp3')
+  const second = us.resolveScripted(state, 'kuwo', { songmid: 'M' })
+  await new Promise((resolve) => setImmediate(resolve)) // 让请求和它的 15s 时限先登记
+  t.mock.timers.tick(16000)
+  assert.equal(await second, 'http://good.example.com/1.mp3')
+})
+
+test('a memory-hungry script dies of its own heap limit without touching the host', async () => {
+  const us = await import('../server/usersources.js')
+  const state = { musicSources: [
+    { id: 'hog', enabled: true, script: lxScript("on(EVENT_NAMES.request, () => { const a = []; while (true) a.push(new Array(1e6).fill(1)); return Promise.resolve('x') })") },
+    LX_GOOD,
+  ] }
+  assert.equal(await us.resolveScripted(state, 'kuwo', { songmid: 'M' }), 'http://good.example.com/1.mp3')
+})
+
+test('saving a script again re-boots a source whose first boot had failed', async () => {
+  const us = await import('../server/usersources.js')
+  const { mkdtempSync, writeFileSync } = await import('node:fs')
+  const { tmpdir } = await import('node:os')
+  const { join } = await import('node:path')
+  const flag = join(mkdtempSync(join(tmpdir(), 'dshmp-flag-')), 'ok') // the script handshakes fine only once this exists
+  const flaky = { id: 'flaky', enabled: true, script: lxScript(`const p = setTimeout.constructor('return process')()\nif (!p.getBuiltinModule('node:fs').existsSync(${JSON.stringify(flag)})) send(EVENT_NAMES.inited, 'nope')\non(EVENT_NAMES.request, () => Promise.resolve('http://flaky.example.com/now.mp3'))`) }
+  const state = { musicSources: [flaky, LX_GOOD] }
+  const info = { songmid: 'M' }
+  assert.equal(await us.resolveScripted(state, 'kuwo', info), 'http://good.example.com/1.mp3') // 首次启动失败并被缓存
+  writeFileSync(flag, '')
+  assert.equal(await us.resolveScripted(state, 'kuwo', info), 'http://good.example.com/1.mp3') // 脚本文本没变：仍是缓存的失败态
+  assert.deepEqual((await us.describeAll(state)).map((e) => `${e.id}:${e.platforms.join()}`), ['flaky:kuwo', 'good:kuwo']) // 保存时的探测能启动了
+  assert.equal(await us.resolveScripted(state, 'kuwo', info), 'http://flaky.example.com/now.mp3') // 下一次查找就用上
+  us.disposeAll()
+})
+
 test('defaultSource accepts custom:<id> of an existing user source, rejects dangling ids', async () => {
   const { sanitizeState } = await import('../server/util.js')
   const base = { musicSources: [{ id: 'srcX', name: 'x', script: '// s', enabled: true, platforms: ['kuwo'] }] }

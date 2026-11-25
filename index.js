@@ -1076,6 +1076,7 @@ export function apply(ctx) {
   ctx.inject(['webServer'], (scope) => {
     const off = scope.webServer.register({ kind: 'prefix', path: ROUTE_PREFIX, handler: route })
     return () => {
+      usersources.disposeAll()
       try {
         off()
       } catch {}
