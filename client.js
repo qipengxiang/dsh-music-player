@@ -145,6 +145,11 @@ window.__ModuleLoader__.load({
       '.dshmp-settings{max-width:640px;display:flex;flex-direction:column;gap:18px}',
       '.dshmp-settings h3{margin:0;font-size:16px}',
       '.dshmp-set-block{display:flex;flex-direction:column;gap:6px}',
+      '.dshmp-acctgrid{display:flex;flex-wrap:wrap;gap:6px}',
+      '.dshmp-acctgrid .dshmp-acct{flex-direction:column;gap:6px;width:76px;height:76px;padding:6px 4px;text-align:center;justify-content:center}',
+      '.dshmp-acctgrid .dshmp-acct .ic{width:28px;height:28px;font-size:14px}',
+      '.dshmp-acctgrid .dshmp-acct .ic img{width:22px;height:22px}',
+      '.dshmp-acctgrid .dshmp-acct .nm{flex:none;width:100%;font-size:12px;line-height:16px;white-space:normal;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}',
       '.dshmp-settings .dshmp-section{font-size:14px;font-weight:700;color:var(--dsw-alias-label-primary);margin-top:0}',
       '.dshmp-set-block>.dshmp-section{margin-bottom:2px}',
       '.dshmp-set-field{display:grid;grid-template-columns:72px 1fr;align-items:center;gap:8px;font-size:12px;color:var(--dsw-alias-label-secondary)}',
@@ -1723,12 +1728,14 @@ window.__ModuleLoader__.load({
                 h('button', { className: 'dshmp-mini', onClick: closeSrc }, '取消'))))) : null,
         h('div', { className: 'dshmp-set-block' },
           h('div', { className: 'dshmp-section' }, '第三方账号'),
-          platforms.map(([id, badge, label]) => {
+          h('div', { className: 'dshmp-acctgrid' }, platforms.map(([id, badge, label]) => {
             const acc = s.state.accounts[id]
             const supported = id === 'netease' || id === 'bilibili' || id === 'kugou' || id === 'kuwo' || id === 'qq' || id === 'soda'
+            const name = acc?.loggedIn ? (acc.name || '已登录') : '点击登录'
             return h('div', {
               key: id,
               className: 'dshmp-acct' + (acc?.loggedIn ? '' : ' off'),
+              title: acc?.loggedIn ? `${label} · ${name}（点击退出登录）` : `${label} · 未登录`,
               onClick: async () => {
                 setErr('')
                 if (acc?.loggedIn) {
@@ -1742,8 +1749,8 @@ window.__ModuleLoader__.load({
               },
             },
               h(PlatformIcon, { key: 'ic', p: id, letter: badge }),
-              h('span', { className: 'nm' }, acc?.loggedIn ? `${label} · ${acc.name || '已登录'}` : `${label} · 未登录（点击登录）`))
-          }),
+              h('span', { className: 'nm' }, name))
+          })),
           login ? h(SettingsLogin, { platform: login, onClose: () => setLogin(null) }) : null),
         h('div', { className: 'dshmp-set-block' },
           h('div', { className: 'dshmp-section' }, '下载目录'),
