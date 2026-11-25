@@ -645,6 +645,21 @@ test('a memory-hungry script dies of its own heap limit without touching the hos
   assert.equal(await us.resolveScripted(state, 'kuwo', { songmid: 'M' }), 'http://good.example.com/1.mp3')
 })
 
+test('lx.request hands the script a parsed body, like lx-music does (sources read body.code directly)', async (t) => {
+  const us = await import('../server/usersources.js')
+  const { createServer } = await import('node:http')
+  const server = createServer((req, res) => { res.writeHead(200, { 'content-type': 'text/plain' }); res.end('{"code":0,"url":"http://good.example.com/from-json.mp3"}') })
+  await new Promise((r) => server.listen(0, '127.0.0.1', r))
+  t.after(() => { server.close() })
+  const script = lxScript(`on(EVENT_NAMES.request, () => new Promise((resolve, reject) => globalThis.lx.request('http://127.0.0.1:${server.address().port}/url', { method: 'GET' }, (err, resp) => {
+    if (err || resp.body.code !== 0) reject(err || new Error('bad body'))
+    else resolve(resp.body.url)
+  })))`)
+  const state = { musicSources: [{ id: 'json', enabled: true, script }] }
+  assert.equal(await us.resolveScripted(state, 'kuwo', { songmid: 'M' }), 'http://good.example.com/from-json.mp3')
+  us.disposeAll()
+})
+
 test('saving a script again re-boots a source whose first boot had failed', async () => {
   const us = await import('../server/usersources.js')
   const { mkdtempSync, writeFileSync } = await import('node:fs')

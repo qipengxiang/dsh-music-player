@@ -59,7 +59,10 @@ function lxRequest(url, options, callback) {
     signal: ctrl.signal,
   }).then(async (resp) => {
     const text = Buffer.from(await resp.arrayBuffer()).toString('utf-8')
-    cb(null, { statusCode: resp.status, headers: Object.fromEntries(resp.headers), body: text }, text)
+    // lx-music hands scripts a parsed object whenever the body parses as JSON; most sources read `body.code` directly
+    let body = text
+    try { body = JSON.parse(text) } catch {}
+    cb(null, { statusCode: resp.status, statusMessage: resp.statusText, headers: Object.fromEntries(resp.headers), body }, body)
   }).catch((err) => {
     cb(tag(err), null, null)
   }).finally(() => clearTimeout(timer))
