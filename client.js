@@ -49,10 +49,10 @@ window.__ModuleLoader__.load({
       '.dshmp-srclist .v{width:86px}',
       '.dshmp-srclist .a{width:120px}',
       '.dshmp-srclist .o{flex:none;display:flex;gap:4px;align-items:center}',
-      '.dshmp-setwrap{flex:1;min-height:0;display:flex;flex-direction:column}',
+      // 保存条走常规流式布局（不悬浮、不遮挡）：外层限高后，内容区自身滚动，保存条始终占位在底部。
+      '.dshmp-setwrap{flex:1;min-height:0;display:flex;flex-direction:column;max-height:100%}',
       '.dshmp-setwrap .dshmp-settings{flex:1;min-height:0;overflow:auto;padding:10px 12px}',
       '.dshmp-setfoot{flex:none;display:flex;align-items:center;gap:10px;padding:10px 12px;border-top:1px solid var(--dsw-alias-border-l2,#eee)}',
-      '.dshmp-setfoot.flat{position:sticky;bottom:0;background:var(--dsw-alias-bg-layer-2,#fff);padding:10px 12px;border-top:1px solid var(--dsw-alias-border-l2,#eee)}',
       '.dshmp-setfoot .grow{flex:1}',
       '.dshmp-toast{position:fixed;left:50%;bottom:64px;transform:translateX(-50%);z-index:130;background:rgba(28,30,34,.94);color:#eee;font-size:12px;line-height:1.2;padding:8px 14px;border-radius:8px;pointer-events:none;opacity:0;transition:opacity .18s;box-shadow:0 4px 14px rgb(0 0 0/.4);max-width:70vw;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}',
       '.dshmp-toast.on{opacity:1}',
@@ -1674,7 +1674,7 @@ window.__ModuleLoader__.load({
           className: 'dshmp-input', value: editing?.[key] ?? '',
           placeholder, onChange: (e) => setEditing({ ...editing, [key]: e.target.value }),
         }))
-      const saveBar = h('div', { className: 'dshmp-setfoot' + (props.modal ? '' : ' flat') },
+      const saveBar = h('div', { className: 'dshmp-setfoot' },
         props.modal ? h('span', { className: 'grow dshmp-pgnum' }, '修改后点击保存生效') : null,
         h('button', { className: 'dshmp-mini primary', onClick: saveAll }, '保存'))
       const inner = h('div', { className: 'dshmp-settings' },
