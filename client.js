@@ -145,6 +145,8 @@ window.__ModuleLoader__.load({
       '.dshmp-settings{max-width:640px;display:flex;flex-direction:column;gap:18px}',
       '.dshmp-settings h3{margin:0;font-size:16px}',
       '.dshmp-set-block{display:flex;flex-direction:column;gap:6px}',
+      '.dshmp-settings .dshmp-section{font-size:14px;font-weight:700;color:var(--dsw-alias-label-primary);margin-top:0}',
+      '.dshmp-set-block>.dshmp-section{margin-bottom:2px}',
       '.dshmp-set-field{display:grid;grid-template-columns:72px 1fr;align-items:center;gap:8px;font-size:12px;color:var(--dsw-alias-label-secondary)}',
       '.dshmp-editbox{display:flex;flex-direction:column;gap:6px;border:1px solid var(--dsw-alias-border-l2,#ccc);border-radius:8px;padding:10px}',
     ].join('')
@@ -1801,7 +1803,7 @@ window.__ModuleLoader__.load({
             h('span', { className: 'dshmp-pgnum' }, '搜索页的初始渠道'))),
         h('div', { className: 'dshmp-set-block' },
           h('div', { style: { display: 'flex', alignItems: 'center', gap: 6 } },
-            h('span', { style: { fontSize: 12, color: 'var(--dsw-alias-label-secondary)' } }, '自定义源'),
+            h('span', { className: 'dshmp-section' }, '自定义源'),
             h('span', { style: { flex: 1 } }),
             h('button', { className: 'dshmp-mini dshmp-addbtn', title: '添加自定义源', onClick: () => openSrc('new') }, '＋')),
           (s.state.musicSources ?? []).length === 0 ? h('div', { className: 'dshmp-empty' }, '还没有自定义源，点击 ＋ 添加') : h('div', { className: 'dshmp-srclist' },
